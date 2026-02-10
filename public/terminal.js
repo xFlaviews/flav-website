@@ -1,5 +1,5 @@
 /* ============================================
-   flavius.dev — Terminal Engine
+   flaviusmiron.com — Terminal Engine
    Zero dependencies. Pure JavaScript.
    ============================================ */
 
@@ -67,12 +67,12 @@
   // ============================================
 
   const bootLines = [
-    { text: 'Booting flavius.dev...', class: 'boot-text', delay: 150 },
+    { text: 'Booting flaviusmiron.com...', class: 'boot-text', delay: 150 },
     { text: 'Loading kernel modules.............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 200 },
     { text: 'Initializing neural interface....... ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 150 },
     { text: 'Establishing connection............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 200 },
     { text: '', class: '', delay: 150 },
-    { text: 'Welcome to flavius.dev', class: 'boot-welcome', delay: 100 },
+    { text: 'Welcome to flaviusmiron.com', class: 'boot-welcome', delay: 100 },
   ];
 
   async function typeText(container, text, charDelay) {
@@ -257,7 +257,7 @@
 </div>
 <div class="line">&nbsp;</div>
 <div class="project">
-  <div class="project-name">flavius.dev <span class="dim">(this website)</span></div>
+  <div class="project-name">flaviusmiron.com <span class="dim">(this website)</span></div>
   <div class="project-desc">Interactive terminal portfolio</div>
   <div class="project-stat green">0 dependencies • Just HTML, CSS & JS • Built with Claude Code</div>
 </div>`;
@@ -300,11 +300,11 @@
       |_| |_|\\__,_| \\_/ |_|\\__,_|___/`;
 
     const info = [
-      ['OS', 'Product Engineer v4.0'],
+      ['OS', 'FounderOS 2.0'],
       ['Host', 'San Francisco / Bergamo'],
-      ['Kernel', 'Claude Code (top 10 user)'],
+      ['Kernel', 'Ship fast, keep it simple'],
       ['Shell', 'Flutter / React / Python'],
-      ['Resolution', '4.5M users @ Waveful'],
+      ['Resolution', '4.5M × $50K'],
       ['Packages', 'SOLID, DDD, Mixpanel, Firebase'],
       ['CPU', 'Caffeine-powered since 2020'],
       ['Memory', '5+ years engineering'],

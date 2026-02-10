@@ -1,5 +1,5 @@
 /* ============================================
-   flavius.dev — Phosphor Terminal Theme
+   flaviusmiron.com — Phosphor Terminal Theme
    Zero dependencies. Pure CSS.
    ============================================ */
 
@@ -178,7 +178,7 @@ html, body {
 
 #output {
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.4;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
@@ -279,7 +279,7 @@ html, body {
 
 /* Timeline entries */
 .timeline-entry {
-  margin: 8px 0;
+  margin: 4px 0;
   padding-left: 16px;
   border-left: 2px solid #333;
 }
@@ -320,7 +320,7 @@ html, body {
 
 .neofetch-info {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.5;
 }
 
 .neofetch-info .label {
@@ -336,7 +336,7 @@ html, body {
 .help-row {
   display: flex;
   gap: 8px;
-  line-height: 1.8;
+  line-height: 1.5;
 }
 
 .help-cmd {
@@ -351,7 +351,7 @@ html, body {
 
 /* Project cards */
 .project {
-  margin: 8px 0;
+  margin: 4px 0;
   padding: 8px 12px;
   background: var(--bg-light);
   border-left: 2px solid var(--amber);
