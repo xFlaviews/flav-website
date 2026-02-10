@@ -301,11 +301,10 @@
 
     const info = [
       ['OS', 'FounderOS 2.0'],
-      ['Host', 'San Francisco / Bergamo'],
+      ['Host', 'San Francisco / Milan'],
       ['Kernel', 'Ship fast, keep it simple'],
-      ['Shell', 'Flutter / React / Python'],
-      ['Resolution', '4.5M × $50K'],
-      ['Packages', 'SOLID, DDD, Mixpanel, Firebase'],
+      ['Shell', 'Claude Code + whatever ships'],
+      ['Packages', 'Mixpanel, Sentry, Firebase, Docker'],
       ['CPU', 'Caffeine-powered since 2020'],
       ['Memory', '5+ years engineering'],
       ['Uptime', 'Always shipping'],
