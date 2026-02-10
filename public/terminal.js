@@ -144,43 +144,33 @@
       ['echo &lt;text&gt;', 'Echo text back'],
     ];
 
-    let html = '<div class="line">&nbsp;</div>';
-    html += '<div class="line section-header">Available Commands</div>';
+    let html = '<div class="line section-header">Available Commands</div>';
     html += '<div class="line dim">─────────────────────────────────────────</div>';
     for (const [cmd, desc] of cmds) {
       html += `<div class="help-row"><span class="help-cmd">${cmd}</span><span class="help-desc dim">${desc}</span></div>`;
     }
-    html += '<div class="line">&nbsp;</div>';
     html += '<div class="line dim">Tip: Use ↑↓ for history, Tab for autocomplete</div>';
     return html;
   };
 
   commands.whoami = commands.about = function () {
     return `
-<div class="line">&nbsp;</div>
 <div class="line section-header">$ whoami</div>
 <div class="output-block">
 <div class="line bright">Flavius Miron</div>
 <div class="line amber">Product Engineer & Technical Co-founder at Waveful</div>
 <div class="line dim">Top 10 Claude Code power user</div>
-<div class="line">&nbsp;</div>
-<div class="line">Based in <span class="cyan">San Francisco</span> & <span class="cyan">Bergamo, Italy</span>.</div>
-<div class="line">&nbsp;</div>
+<div class="line">Based in <span class="cyan">San Francisco</span> & <span class="cyan">Milan, Italy</span>.</div>
 <div class="line">I scale products from zero to millions — Waveful went from</div>
 <div class="line"><span class="amber">78K → 4.5M users</span> and <span class="amber">$1K → $50K ARR/month</span> under my lead.</div>
-<div class="line">&nbsp;</div>
 <div class="line">I built <span class="bright">Waveful App 2.0</span> from scratch in <span class="green">under one month</span>.</div>
-<div class="line">&nbsp;</div>
-<div class="line">I believe in shipping fast, building with AI, and keeping</div>
-<div class="line">things simple.</div>
+<div class="line">I believe in shipping fast, building with AI, and keeping things simple.</div>
 </div>`;
   };
 
   commands.experience = commands.work = function () {
     return `
-<div class="line">&nbsp;</div>
 <div class="line section-header">$ experience</div>
-<div class="line">&nbsp;</div>
 <div class="timeline-entry">
   <div class="role">Technical Co-founder & Product Engineer</div>
   <div class="company bright">Waveful</div>
@@ -191,7 +181,6 @@
   <div class="detail">• Led architecture, CI/CD, analytics (Mixpanel)</div>
   <div class="detail">• Flutter/Dart mobile development, Firebase backend</div>
 </div>
-<div class="line">&nbsp;</div>
 <div class="timeline-entry">
   <div class="role">Full Stack Developer</div>
   <div class="company bright">Conferinta Europeana</div>
@@ -199,7 +188,6 @@
   <div class="detail">• Built event management platform</div>
   <div class="detail">• React, Node.js, Firebase stack</div>
 </div>
-<div class="line">&nbsp;</div>
 <div class="timeline-entry">
   <div class="role">Software Engineer Intern</div>
   <div class="company bright">SORINT.lab</div>
@@ -207,7 +195,6 @@
   <div class="detail">• Enterprise Java/Kotlin projects</div>
   <div class="detail">• CI/CD pipelines & Docker</div>
 </div>
-<div class="line">&nbsp;</div>
 <div class="timeline-entry">
   <div class="role">Web Developer Intern</div>
   <div class="company bright">Aicod</div>
@@ -223,39 +210,30 @@
     }
 
     return `
-<div class="line">&nbsp;</div>
 <div class="line section-header">$ skills</div>
-<div class="line">&nbsp;</div>
 <div class="line amber">Languages</div>
 <div class="line">${tags(['Flutter/Dart', 'Kotlin', 'Python', 'JavaScript', 'HTML/CSS', 'PHP'], '#67e8f9')}</div>
-<div class="line">&nbsp;</div>
 <div class="line amber">Frameworks</div>
 <div class="line">${tags(['React', 'Bootstrap'], '#c084fc')}</div>
-<div class="line">&nbsp;</div>
 <div class="line amber">Tools & Platforms</div>
 <div class="line">${tags(['CI/CD', 'Git', 'Figma', 'Linux', 'Docker', 'Gradle', 'Firebase', 'Mixpanel'], '#4ade80')}</div>
-<div class="line">&nbsp;</div>
 <div class="line amber">Principles</div>
 <div class="line">${tags(['SOLID', 'DDD', 'Clean Architecture', 'Ship Fast'], '#ffb627')}</div>`;
   };
 
   commands.projects = function () {
     return `
-<div class="line">&nbsp;</div>
 <div class="line section-header">$ projects</div>
-<div class="line">&nbsp;</div>
 <div class="project">
   <div class="project-name">Waveful</div>
   <div class="project-desc">Creator social network for building meaningful connections</div>
   <div class="project-stat amber">4.5M users • $50K ARR/month • Built 2.0 from scratch</div>
 </div>
-<div class="line">&nbsp;</div>
 <div class="project">
   <div class="project-name">Lune</div>
   <div class="project-desc">Work shift calendar app for managing schedules</div>
   <div class="project-stat">1000+ downloads • 60 DAU</div>
 </div>
-<div class="line">&nbsp;</div>
 <div class="project">
   <div class="project-name">flaviusmiron.com <span class="dim">(this website)</span></div>
   <div class="project-desc">Interactive terminal portfolio</div>
@@ -265,15 +243,12 @@
 
   commands.education = function () {
     return `
-<div class="line">&nbsp;</div>
 <div class="line section-header">$ education</div>
-<div class="line">&nbsp;</div>
 <div class="timeline-entry">
   <div class="role">Higher Technical Diploma — Software Development</div>
   <div class="company bright">ITS ICT Piemonte</div>
   <div class="date">2020 – 2022</div>
 </div>
-<div class="line">&nbsp;</div>
 <div class="timeline-entry">
   <div class="role">Technical Diploma — Computer Science</div>
   <div class="company bright">ITIS Pininfarina</div>
@@ -283,7 +258,6 @@
 
   commands.contact = function () {
     return `
-<div class="line">&nbsp;</div>
 <div class="line section-header">$ contact</div>
 <div class="output-block">
 <div class="line"><span class="amber">Email</span>    <a href="mailto:flaviusmironcatalin@gmail.com" target="_blank">flaviusmironcatalin@gmail.com</a></div>
@@ -315,7 +289,6 @@
     ).join('');
 
     return `
-<div class="line">&nbsp;</div>
 <div class="neofetch">
   <pre class="neofetch-ascii">${escapeHtml(ascii)}</pre>
   <div class="neofetch-info">${infoHtml}</div>
@@ -329,7 +302,6 @@
 
   commands.ls = function () {
     return `
-<div class="line">&nbsp;</div>
 <div class="line"><span class="cyan">about.txt</span>      <span class="cyan">experience.log</span>   <span class="cyan">skills.json</span></div>
 <div class="line"><span class="blue">projects/</span>      <span class="green">contact.sh</span>        <span class="cyan">education.txt</span></div>`;
   };
