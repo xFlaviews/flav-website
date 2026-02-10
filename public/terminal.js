@@ -548,10 +548,13 @@
   // ============================================
 
   const terminal = document.getElementById('terminal');
+  var isShuttingDown = false;
 
-  // Red dot — shutdown and reload
+  // Red dot — shutdown and reload (guarded against spam)
   document.querySelector('.dot.red').addEventListener('click', function (e) {
     e.stopPropagation();
+    if (isShuttingDown) return;
+    isShuttingDown = true;
     appendToOutput('<div class="line red">Shutting down...</div>');
     setTimeout(function () {
       location.reload();
@@ -564,24 +567,18 @@
     terminal.classList.toggle('minimized');
   });
 
-  // Green dot — fullscreen toggle
-  document.querySelector('.dot.green').addEventListener('click', function (e) {
-    e.stopPropagation();
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      terminal.requestFullscreen().catch(function () {
-        // Fallback: toggle CSS fullscreen class
-        terminal.classList.toggle('fullscreen');
-      });
+  // Click minimized title bar to restore
+  document.querySelector('.title-bar').addEventListener('click', function (e) {
+    if (terminal.classList.contains('minimized') && !e.target.classList.contains('dot')) {
+      e.stopPropagation();
+      terminal.classList.remove('minimized');
     }
   });
 
-  // Sync CSS class when exiting fullscreen via Escape key
-  document.addEventListener('fullscreenchange', function () {
-    if (!document.fullscreenElement) {
-      terminal.classList.remove('fullscreen');
-    }
+  // Green dot — CSS viewport fill toggle (no browser fullscreen)
+  document.querySelector('.dot.green').addEventListener('click', function (e) {
+    e.stopPropagation();
+    terminal.classList.toggle('fullscreen');
   });
 
   // ============================================

@@ -66,6 +66,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* CRT Scanlines */
@@ -128,16 +129,31 @@ html, body {
   cursor: pointer;
 }
 
-/* Minimized state — collapse to title bar only */
+/* Minimized state — collapse to title bar at bottom */
+.minimized {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  height: 38px;       /* title bar height only */
+  min-height: 0;
+  margin: 0;
+  border-radius: 8px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9999;
+}
+
 .minimized #screen {
   display: none;
 }
-.minimized {
-  height: auto;
-}
 
-/* Fullscreen state */
+/* Fullscreen state — fill viewport via CSS, not browser fullscreen */
 .fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
   width: 100vw;
   height: 100vh;
   margin: 0;
