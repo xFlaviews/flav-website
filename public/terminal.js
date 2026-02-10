@@ -561,18 +561,34 @@
     }, 1500);
   });
 
-  // Yellow dot — minimize / restore
+  // Create dock icon
+  var dockIcon = document.createElement('div');
+  dockIcon.id = 'dock-icon';
+  dockIcon.textContent = '>_';
+  document.body.appendChild(dockIcon);
+
+  // Yellow dot — genie minimize
   document.querySelector('.dot.yellow').addEventListener('click', function (e) {
     e.stopPropagation();
-    terminal.classList.toggle('minimized');
+    if (terminal.classList.contains('minimized')) {
+      // Restore
+      dockIcon.classList.remove('visible');
+      terminal.classList.remove('minimized');
+      input.focus();
+    } else {
+      // Genie out
+      terminal.classList.add('minimized');
+      setTimeout(function () {
+        dockIcon.classList.add('visible');
+      }, 450);
+    }
   });
 
-  // Click minimized title bar to restore
-  document.querySelector('.title-bar').addEventListener('click', function (e) {
-    if (terminal.classList.contains('minimized') && !e.target.classList.contains('dot')) {
-      e.stopPropagation();
-      terminal.classList.remove('minimized');
-    }
+  // Dock icon click — restore from minimize
+  dockIcon.addEventListener('click', function () {
+    dockIcon.classList.remove('visible');
+    terminal.classList.remove('minimized');
+    input.focus();
   });
 
   // Green dot — CSS viewport fill toggle (no browser fullscreen)

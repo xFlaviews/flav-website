@@ -66,7 +66,8 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.4s ease;
 }
 
 /* CRT Scanlines */
@@ -129,33 +130,69 @@ html, body {
   cursor: pointer;
 }
 
-/* Minimized state — collapse to title bar at bottom */
+/* Genie minimize — transform-only, no position change */
 .minimized {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px;
-  height: 38px;       /* title bar height only */
-  min-height: 0;
-  margin: 0;
-  border-radius: 8px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 9999;
+  transform: perspective(800px) rotateX(30deg) scaleX(0.2) scaleY(0.01);
+  transform-origin: bottom center;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.minimized #screen {
-  display: none;
+/* Dock icon — appears after genie minimize */
+#dock-icon {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(145deg, #1e1e1e, #141414);
+  border: 1px solid #333;
+  border-radius: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.3s ease;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+#dock-icon.visible {
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+}
+
+#dock-icon:hover {
+  transform: translateX(-50%) scale(1.15);
+}
+
+/* Running indicator dot below icon (macOS style) */
+#dock-icon::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--amber);
+  border-radius: 50%;
 }
 
 /* Fullscreen state — fill viewport via CSS, not browser fullscreen */
 .fullscreen {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   z-index: 9999;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   margin: 0;
   border-radius: 0;
   max-width: none;
