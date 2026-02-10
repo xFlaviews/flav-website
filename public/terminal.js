@@ -544,6 +544,47 @@
   });
 
   // ============================================
+  // Traffic Light Dot Handlers
+  // ============================================
+
+  const terminal = document.getElementById('terminal');
+
+  // Red dot — shutdown and reload
+  document.querySelector('.dot.red').addEventListener('click', function (e) {
+    e.stopPropagation();
+    appendToOutput('<div class="line red">Shutting down...</div>');
+    setTimeout(function () {
+      location.reload();
+    }, 1500);
+  });
+
+  // Yellow dot — minimize / restore
+  document.querySelector('.dot.yellow').addEventListener('click', function (e) {
+    e.stopPropagation();
+    terminal.classList.toggle('minimized');
+  });
+
+  // Green dot — fullscreen toggle
+  document.querySelector('.dot.green').addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      terminal.requestFullscreen().catch(function () {
+        // Fallback: toggle CSS fullscreen class
+        terminal.classList.toggle('fullscreen');
+      });
+    }
+  });
+
+  // Sync CSS class when exiting fullscreen via Escape key
+  document.addEventListener('fullscreenchange', function () {
+    if (!document.fullscreenElement) {
+      terminal.classList.remove('fullscreen');
+    }
+  });
+
+  // ============================================
   // Initialize
   // ============================================
 
