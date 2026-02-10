@@ -141,19 +141,23 @@ html, body {
 
 .title-links {
   display: flex;
-  gap: 10px;
+  gap: 6px;
 }
 
 .title-links a {
-  color: var(--dim);
+  color: var(--text);
   text-decoration: none;
   font-size: 11px;
   letter-spacing: 0.5px;
-  transition: color 0.2s;
+  padding: 2px 8px;
+  border: 1px solid #333;
+  border-radius: 3px;
+  transition: color 0.2s, border-color 0.2s;
 }
 
 .title-links a:hover {
-  color: var(--text-bright);
+  color: var(--amber);
+  border-color: var(--amber);
 }
 
 /* ============================================
