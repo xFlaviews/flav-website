@@ -67,14 +67,12 @@
   // ============================================
 
   const bootLines = [
-    { text: 'Booting flavius.dev...', class: 'boot-text', delay: 400 },
-    { text: 'Loading kernel modules.............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 600 },
-    { text: 'Initializing neural interface....... ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 500 },
-    { text: 'Establishing connection............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 700 },
-    { text: '', class: '', delay: 300 },
+    { text: 'Booting flavius.dev...', class: 'boot-text', delay: 150 },
+    { text: 'Loading kernel modules.............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 200 },
+    { text: 'Initializing neural interface....... ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 150 },
+    { text: 'Establishing connection............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 200 },
+    { text: '', class: '', delay: 150 },
     { text: 'Welcome to flavius.dev', class: 'boot-welcome', delay: 100 },
-    { text: "Type 'help' to see available commands.", class: 'boot-hint', delay: 100 },
-    { text: '', class: '', delay: 100 },
   ];
 
   async function typeText(container, text, charDelay) {
@@ -101,7 +99,7 @@
       div.className = `line ${line.class}`;
       output.appendChild(div);
 
-      await typeText(div, line.text, 18);
+      await typeText(div, line.text, 10);
 
       if (line.suffix) {
         div.insertAdjacentHTML('beforeend', line.suffix);
@@ -110,6 +108,12 @@
 
       await sleep(line.delay);
     }
+
+    // Show neofetch after welcome
+    appendToOutput(commands.neofetch());
+    appendToOutput('<div class="line">&nbsp;</div>');
+    appendToOutput('<div class="line boot-hint">Type \'help\' to see available commands.</div>');
+    appendToOutput('<div class="line">&nbsp;</div>');
 
     isBooting = false;
     input.disabled = false;
