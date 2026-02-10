@@ -187,7 +187,7 @@ html, body {
 }
 
 /* Fullscreen state — fill viewport via CSS, not browser fullscreen */
-.fullscreen {
+#terminal.fullscreen {
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -197,8 +197,8 @@ html, body {
   border-radius: 0;
   max-width: none;
 }
-.fullscreen::before,
-.fullscreen::after {
+#terminal.fullscreen::before,
+#terminal.fullscreen::after {
   border-radius: 0;
 }
 
