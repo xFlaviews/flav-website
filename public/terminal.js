@@ -67,12 +67,12 @@
   // ============================================
 
   const bootLines = [
-    { text: 'Booting flaviusmiron.com...', class: 'boot-text', delay: 150 },
-    { text: 'Loading kernel modules.............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 200 },
-    { text: 'Initializing neural interface....... ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 150 },
-    { text: 'Establishing connection............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 200 },
-    { text: '', class: '', delay: 150 },
-    { text: 'Welcome to flaviusmiron.com', class: 'boot-welcome', delay: 100 },
+    { text: 'Booting flaviusmiron.com...', class: 'boot-text', delay: 80 },
+    { text: 'Loading kernel modules.............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 100 },
+    { text: 'Initializing neural interface....... ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 80 },
+    { text: 'Establishing connection............. ', class: 'boot-text', suffix: '<span class="boot-ok">OK</span>', delay: 100 },
+    { text: '', class: '', delay: 80 },
+    { text: 'Welcome to flaviusmiron.com', class: 'boot-welcome', delay: 60 },
   ];
 
   async function typeText(container, text, charDelay) {
@@ -81,7 +81,7 @@
       scrollToBottom();
       // Vary timing for realism
       const jitter = charDelay + (Math.random() - 0.5) * charDelay * 0.6;
-      await sleep(Math.max(5, jitter));
+      await sleep(Math.max(3, jitter));
     }
   }
 
@@ -99,7 +99,7 @@
       div.className = `line ${line.class}`;
       output.appendChild(div);
 
-      await typeText(div, line.text, 10);
+      await typeText(div, line.text, 6);
 
       if (line.suffix) {
         div.insertAdjacentHTML('beforeend', line.suffix);
