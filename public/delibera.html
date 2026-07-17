@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delibera — Demo fattibilità mutui deterministica</title>
+<meta name="description" content="Demo di un motore decisionale deterministico per la fattibilità mutui: regole come dati versionati, ricalcolo scoped al cambio policy, grafo della conoscenza. Progetto personale di Flavius Miron.">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Delibera — Demo fattibilità mutui">
+<meta property="og:description" content="Motore decisionale deterministico per il credito: simula, cambia una regola, guarda chi cambia esito.">
+</head>
+<body>
+<style>
+:root{
+  --ground:#F5F7F9;--surface:#FFF;--panel:#EEF1F5;--ink:#1A1F27;--strong:#0A0D12;
+  --muted:#5A6473;--faint:#8892A1;--line:#E2E6EC;--line2:#CDD4DD;
+  --accent:#274A78;--accent-ink:#1C3860;--accent-soft:#E6ECF4;
+  --ok:#1E7A54;--ok-bg:#E4F1EA;--reduce:#98650F;--reduce-bg:#F4ECD8;
+  --cond:#215FA6;--cond-bg:#E3EDF7;--refer:#5C4FA0;--refer-bg:#E9E6F5;
+  --ko:#A63333;--ko-bg:#F5E2E2;
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --ground:#0E1218;--surface:#141A21;--panel:#1A212A;--ink:#D9DEE6;--strong:#F3F6FA;
+  --muted:#93A0B2;--faint:#6A7686;--line:#242C36;--line2:#323B48;
+  --accent:#7C9ED4;--accent-ink:#9BB6E2;--accent-soft:#1A2740;
+  --ok:#5CC08C;--ok-bg:#152720;--reduce:#D3A64C;--reduce-bg:#282212;
+  --cond:#6FA4E2;--cond-bg:#132133;--refer:#9C8EDD;--refer-bg:#1F1B31;
+  --ko:#E07272;--ko-bg:#2A1616;}}
+:root[data-theme="light"]{
+  --ground:#F5F7F9;--surface:#FFF;--panel:#EEF1F5;--ink:#1A1F27;--strong:#0A0D12;
+  --muted:#5A6473;--faint:#8892A1;--line:#E2E6EC;--line2:#CDD4DD;
+  --accent:#274A78;--accent-ink:#1C3860;--accent-soft:#E6ECF4;
+  --ok:#1E7A54;--ok-bg:#E4F1EA;--reduce:#98650F;--reduce-bg:#F4ECD8;
+  --cond:#215FA6;--cond-bg:#E3EDF7;--refer:#5C4FA0;--refer-bg:#E9E6F5;
+  --ko:#A63333;--ko-bg:#F5E2E2;}
+:root[data-theme="dark"]{
+  --ground:#0E1218;--surface:#141A21;--panel:#1A212A;--ink:#D9DEE6;--strong:#F3F6FA;
+  --muted:#93A0B2;--faint:#6A7686;--line:#242C36;--line2:#323B48;
+  --accent:#7C9ED4;--accent-ink:#9BB6E2;--accent-soft:#1A2740;
+  --ok:#5CC08C;--ok-bg:#152720;--reduce:#D3A64C;--reduce-bg:#282212;
+  --cond:#6FA4E2;--cond-bg:#132133;--refer:#9C8EDD;--refer-bg:#1F1B31;
+  --ko:#E07272;--ko-bg:#2A1616;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px 80px}
+header{padding:34px 0 18px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:.68rem;font-weight:650;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(1.7rem,4vw,2.3rem);font-weight:750;letter-spacing:-.02em;margin:.15em 0 .1em;color:var(--strong)}
+.sub{color:var(--muted);max-width:64ch;font-size:.92rem}
+.tabs{display:flex;gap:6px;margin:20px 0 24px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-weight:600;font-size:.86rem;padding:9px 16px;border-radius:100px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{display:none}.panel.active{display:block}
+h2{font-size:1.12rem;font-weight:700;color:var(--strong);margin:0 0 4px}
+h3{font-size:.72rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px}
+.grid{display:grid;gap:16px}
+@media(min-width:860px){.g2{grid-template-columns:5fr 4fr}.g3{grid-template-columns:1fr 1fr 1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 12px}
+label{display:block;font-size:.68rem;font-weight:650;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+input,select{width:100%;font:inherit;font-size:.9rem;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-weight:650;font-size:.92rem;background:var(--accent);color:#fff;border:0;border-radius:9px;padding:11px 22px;cursor:pointer;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:700;padding:6px 13px;border-radius:100px}
+.chip .d{width:8px;height:8px;border-radius:50%}
+.c-OK{background:var(--ok-bg);color:var(--ok)}.c-OK .d{background:var(--ok)}
+.c-REDUCE{background:var(--reduce-bg);color:var(--reduce)}.c-REDUCE .d{background:var(--reduce)}
+.c-CONDITION{background:var(--cond-bg);color:var(--cond)}.c-CONDITION .d{background:var(--cond)}
+.c-REFER{background:var(--refer-bg);color:var(--refer)}.c-REFER .d{background:var(--refer)}
+.c-KO{background:var(--ko-bg);color:var(--ko)}.c-KO .d{background:var(--ko)}
+.verdict-big{font-size:1.5rem;font-weight:760;letter-spacing:-.01em;margin:6px 0 2px}
+.flag{border-left:3px solid var(--line2);padding:8px 12px;margin:8px 0;background:var(--panel);border-radius:0 8px 8px 0;font-size:.87rem}
+.flag b{color:var(--strong)}
+.flag .ref{font-family:var(--mono);font-size:.72rem;color:var(--accent-ink)}
+.flag.f-KO{border-left-color:var(--ko)}.flag.f-REDUCE{border-left-color:var(--reduce)}
+.flag.f-CONDITION{border-left-color:var(--cond)}.flag.f-REFER{border-left-color:var(--refer)}
+.kv{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;font-size:.86rem;align-items:center}
+.kv .n{color:var(--muted)}.kv .v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--strong)}
+.meter{height:6px;background:var(--panel);border-radius:4px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:4px;background:var(--ok)}
+.meter i.warn{background:var(--reduce)}.meter i.bad{background:var(--ko)}
+.bars{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.brow{display:grid;grid-template-columns:88px 1fr 120px;gap:10px;align-items:center;font-size:.82rem}
+.brow .bl{font-family:var(--mono);font-size:.74rem;font-weight:700}
+.btrack{height:16px;background:var(--panel);border-radius:5px;position:relative;overflow:hidden}
+.bfill{position:absolute;inset:0 auto 0 0;border-radius:5px;opacity:.85}
+.bghost{position:absolute;inset:0 auto 0 0;border-radius:5px;opacity:.28}
+.bnum{font-family:var(--mono);font-size:.76rem;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.big{font-size:2rem;font-weight:760;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--strong)}
+.delta{font-family:var(--mono);font-weight:700;font-size:.95rem}
+.delta.up{color:var(--ok)}.delta.down{color:var(--ko)}
+.scen{border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:10px;background:var(--surface);cursor:pointer}
+.scen.on{border-color:var(--accent);background:var(--accent-soft)}
+.scen h4{margin:0 0 2px;font-size:.92rem;color:var(--strong)}
+.scen p{margin:0;font-size:.8rem;color:var(--muted)}
+.scen .sl{display:flex;align-items:center;gap:10px;margin-top:9px}
+.scen input[type=range]{flex:1;padding:0;background:transparent;border:0}
+.scen .val{font-family:var(--mono);font-weight:700;font-size:.9rem;color:var(--accent-ink);min-width:64px;text-align:right}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{text-align:left;font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line2)}
+td{padding:7px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+td .chip{font-size:.68rem;padding:3px 9px}
+.note{font-size:.8rem;color:var(--muted);margin-top:10px}
+.banner{border-radius:10px;padding:13px 15px;font-size:.95rem;line-height:1.5;border:1px solid var(--line);background:var(--panel)}
+.banner.idle{color:var(--muted)}
+.banner b{color:var(--strong)}
+.banner .hl{font-weight:700}
+.banner.worse{border-left:3px solid var(--ko);background:var(--ko-bg)}
+.banner.better{border-left:3px solid var(--ok);background:var(--ok-bg)}
+.banner.flat{border-left:3px solid var(--line2)}
+.banner .lead{font-size:1.02rem;font-weight:600;color:var(--strong);display:block;margin-bottom:4px}
+.gdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:middle}
+#gcanvas{cursor:crosshair;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.flow{display:flex;gap:0;overflow-x:auto;margin:14px 0}
+.step{flex:1;min-width:140px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}
+.step.ai{border-color:var(--accent);background:var(--accent-soft)}
+.step .t1{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.step.ai .t1{color:var(--accent-ink)}
+.step .t2{font-weight:680;font-size:.9rem;color:var(--strong);margin:2px 0 3px}
+.step .t3{font-size:.76rem;color:var(--muted);line-height:1.4}
+.arr{display:flex;align-items:center;color:var(--faint);padding:0 7px;flex:0 0 auto}
+.mono{font-family:var(--mono);font-size:.8rem}
+code{font-family:var(--mono);font-size:.85em;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:.03em .35em}
+.pill{font-size:.7rem;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border-radius:100px;padding:3px 10px}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Delibera · demo interattiva</div>
+  <h1>Fattibilità mutui, deterministica</h1>
+  <p class="sub">Regole derivate da un manuale reale di politiche del credito. Il motore gira in questa pagina: nessuna AI nel verdetto, ogni esito cita la sua fonte. Cambia una regola e guarda chi flippa.</p>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-p="p1">1 · Simula cliente</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p2">2 · Cambia la policy</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p3">3 · Come funziona</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="p4">4 · Dietro le quinte</button>
+</div>
+
+<!-- ============ TAB 1 ============ -->
+<section class="panel active" id="p1">
+<div class="grid g2">
+  <div class="card">
+    <h2>Profilo richiedente</h2>
+    <div class="fgrid" id="form"></div>
+    <button class="btn" id="runBtn">RUN fattibilità</button>
+    <p class="note">Il form espone <b>16 delle ~110 variabili</b> del modello completo (102 fatti + derivati). Nel prodotto le altre non le compila l'utente: le <b>estrae l'AI dai documenti</b> (buste paga, perizia, atto di provenienza, estratti conto).</p>
+  </div>
+  <div class="card" id="verdictCard">
+    <h2>Esito</h2>
+    <div id="vOut"><p class="note">Compila il profilo e premi RUN.</p></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ TAB 2 ============ -->
+<section class="panel" id="p2">
+<div class="grid g2">
+  <div>
+    <div class="card">
+      <h2>La policy è un dato. Modificala.</h2>
+      <p class="note" style="margin-top:2px">Portafoglio: <b id="pfN"></b> clienti già valutati (fatti salvati, nessuna ri-estrazione). Scegli uno scenario e muovi la soglia.</p>
+      <div id="scens" style="margin-top:12px"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>Cosa succede</h2>
+      <div id="banner" class="banner idle">Muovi una soglia a sinistra per vedere l'effetto sul portafoglio.</div>
+      <div class="grid g3" style="margin:14px 0 4px">
+        <div><div class="big" id="okBefore">–</div><div class="note">clienti fattibili prima</div></div>
+        <div><div class="big" id="okAfter">–</div><div class="note">clienti fattibili dopo</div></div>
+        <div><div class="big delta" id="okDelta">–</div><div class="note">variazione</div></div>
+      </div>
+      <h3>Distribuzione esiti (prima → dopo)</h3>
+      <div class="bars" id="dist"></div>
+      <div class="kv" style="margin-top:14px">
+        <span class="n">Clienti da ricalcolare (scoping)</span><span class="meter"><i id="cohMeter" style="width:0%"></i></span><span class="v" id="cohN">–</span>
+        <span class="n">Ricalcolo</span><span></span><span class="v" id="calcMs">–</span>
+      </div>
+      <p class="note">Fattibile = esito OK, REDUCE, CONDITION o REFER (l'unico esito che nega è KO). Ricalcolo sui fatti già salvati: nessuna AI, nessun documento riletto.</p>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>Chi flippa</h2>
+      <div id="flips"><p class="note">Nessuna modifica attiva.</p></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ TAB 3 ============ -->
+<section class="panel" id="p3">
+  <div class="card">
+    <h2>Tre livelli, un solo punto AI</h2>
+    <div class="flow">
+      <div class="step"><div class="t1">Input</div><div class="t2">Documenti</div><div class="t3">buste paga, perizia, compromesso</div></div>
+      <div class="arr">→</div>
+      <div class="step ai"><div class="t1">L1 · AI</div><div class="t2">Fatti grezzi</div><div class="t3">estrazione strutturata + validazione schema</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="t1">L2 · codice</div><div class="t2">Derivati</div><div class="t3">reddito netto pesato, rata, DSR, LTV, MRI</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="t1">L3 · regole-dato</div><div class="t2">Verdetto</div><div class="t3">worst-outcome-wins + citazione fonte</div></div>
+    </div>
+    <p class="note">L'AI popola solo i fatti. I calcoli e il verdetto sono deterministici: stesso input, stesso esito, riproducibile in audit (il motore di questa pagina è lo stesso codice del batch).</p>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h2>Quando la banca cambia le regole</h2>
+      <div class="flow" style="flex-direction:column;gap:8px">
+        <div class="step ai" style="min-width:0"><div class="t1">AI</div><div class="t2">Propone il diff di regole dal nuovo contratto</div><div class="t3">JSON vincolato a schema, mai testo libero</div></div>
+        <div class="step" style="min-width:0"><div class="t1">Gate</div><div class="t2">Golden test + approvazione umana</div><div class="t3">gli esempi svolti del manuale sono i test di regressione</div></div>
+        <div class="step" style="min-width:0"><div class="t1">Engine</div><div class="t2">Ricalcolo scoped + notifica ai soli flippati</div><div class="t3">quello che hai visto nel tab 2</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Il modello è un grafo</h2>
+      <p class="note" style="margin-top:2px">Regole, variabili, flag e finalità sono nodi collegati (<code>reads</code>, <code>emits</code>, <code>cites</code>). Un agente AI lo interroga senza leggere il manuale.</p>
+      <div class="kv" style="margin-top:10px" id="kgStats"></div>
+      <p class="note">Esempio: <span class="mono" id="kgSample"></span></p>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="p4">
+  <div class="card">
+    <h2>Dietro le quinte: dal PDF al motore</h2>
+    <p class="note" style="margin-top:2px">Il manuale ING (36 pagine) è stato compilato in un motore eseguibile da una pipeline multi-agente con loop di verifica. Questi sono gli artefatti reali prodotti, non un mockup.</p>
+    <div class="flow" style="margin-top:14px">
+      <div class="step"><div class="t1">1 · Compile</div><div class="t2">PDF → JSON</div><div class="t3">variabili + regole per area</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="t1">2 · Lint</div><div class="t2">Statico</div><div class="t3">ID, referenze, espressioni</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="t1">3 · Fidelity</div><div class="t2">vs PDF</div><div class="t3">audit avversariale Opus</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="t1">4 · Golden</div><div class="t2">Esempi svolti</div><div class="t3">test eseguibili dal manuale</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="t1">5 · Sim</div><div class="t2">2000 profili</div><div class="t3">invarianti + determinismo</div></div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card"><div class="big" id="beVars">–</div><div class="note">variabili mappate</div></div>
+    <div class="card"><div class="big" id="beRules">–</div><div class="note">regole compilate</div></div>
+    <div class="card"><div class="big" id="beGolden">–</div><div class="note">golden test superati</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h2>Copertura per area</h2>
+      <div class="tw" style="margin-top:8px"><table id="beAreas"><thead><tr><th>Area</th><th>Variabili</th><th>Regole</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>File del motore</h2>
+      <p class="note" style="margin-top:2px">Cartella <code>delibera-engine/</code>. Ogni regola è un dato editabile e versionato.</p>
+      <div class="tw" style="margin-top:8px;max-height:260px;overflow-y:auto"><table id="beFiles"><thead><tr><th>File</th><th>Dimensione</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h2>Una regola, come dato</h2>
+      <p class="note" style="margin-top:2px">Presa da <code>rules-reddito.json</code>. Il campo <code>reads</code> collega la regola alle variabili nel grafo.</p>
+      <pre id="beRule" style="margin-top:10px"></pre>
+    </div>
+    <div class="card">
+      <h2>Il grafo della conoscenza</h2>
+      <p class="note" style="margin-top:2px"><code>graph.json</code>: <b id="beGraphN"></b> nodi, <b id="beGraphE"></b> archi. Un agente AI lo interroga senza rileggere il manuale.</p>
+      <div class="kv" style="margin-top:10px" id="beGraphKinds"></div>
+      <p class="note">Verifica: golden 48/48 · sim 2000 profili, 0 crash, 0 non-determinismo · lint pulito.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>graph.json, visualizzato</h2>
+    <p class="note" style="margin-top:2px">Un estratto reale del grafo: 7 variabili chiave, le regole che le leggono (<code>reads</code>), i flag che emettono (<code>emits</code>). Colore regola = esito. Passa il mouse su un nodo per evidenziare i collegamenti.</p>
+    <div class="glegend" style="display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 6px;font-size:.76rem">
+      <span><span class="gdot" style="background:var(--accent)"></span> variabile</span>
+      <span><span class="gdot" style="background:var(--ok)"></span> regola OK</span>
+      <span><span class="gdot" style="background:var(--reduce)"></span> REDUCE</span>
+      <span><span class="gdot" style="background:var(--refer)"></span> REFER/COND</span>
+      <span><span class="gdot" style="background:var(--ko)"></span> KO</span>
+      <span><span class="gdot" style="background:var(--faint)"></span> flag</span>
+    </div>
+    <div style="overflow-x:auto"><canvas id="gcanvas" width="900" height="560" style="width:100%;max-width:900px;display:block"></canvas></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>...e come JSON</h2>
+    <p class="note" style="margin-top:2px">La struttura reale del file (intestazione + primi nodi e archi). Ogni riga è un dato, versionato e interrogabile.</p>
+    <pre id="beGraphJson" style="margin-top:10px;max-height:320px;overflow:auto"></pre>
+  </div>
+</section>
+
+<footer>
+  <span><b>Delibera</b> · decisione deterministica, AI per estrazione e bozze di regole</span>
+  <span class="mono" id="verTag"></span>
+</footer>
+</div>
+
+<script>
+"use strict";
+/* ============ deterministic PRNG ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ============ reference data ============ */
+const MRI={Nord:{Metropoli:[913,1263,1577,1900,2191,2471,2739],Grande:[870,1211,1517,1826,2106,2375,2633],Piccolo:[820,1153,1451,1745,2015,2274,2522]},
+Centro:{Metropoli:[868,1189,1477,1776,2044,2302,2548],Grande:[824,1136,1416,1701,1958,2204,2441],Piccolo:[774,1077,1348,1618,1865,2101,2327]},
+Sud:{Metropoli:[679,973,1238,1496,1733,1961,2179],Grande:[656,947,1208,1461,1694,1918,2133],Piccolo:[617,902,1158,1402,1629,1847,2058]}};
+const RISK_ATECO=["travel","restaurants","accomodation","air","entertainment"];
+
+/* ============ rules as DATA (AST, no eval) ============ */
+/* cond: {all:[{v,op,val}]} ops: > >= < <= == != in ; out.type: OK|KO|REDUCE|CONDITION|REFER */
+const RULES=[
+ {id:"SUBJ_ETA_MAX",area:"soggetto",reads:["eta_a_scadenza"],when:{all:[{v:"eta_a_scadenza",op:">",val:80}]},out:{type:"KO",flag:"ETA_OLTRE_80_A_SCADENZA",ref:"p.4",detail:"Età massima 80 anni alla scadenza dell'ammortamento"}},
+ {id:"SUBJ_CIG",area:"soggetto",reads:["cassa_integrazione_pct"],when:{all:[{v:"cassa_integrazione_pct",op:">",val:25}]},out:{type:"KO",flag:"CASSA_INTEGRAZIONE",ref:"p.5, p.20",detail:"CIG superiore al 25% dell'orario: non finanziabile"}},
+ {id:"SUBJ_INOCCUPATO",area:"soggetto",reads:["categoria_reddituale"],when:{all:[{v:"categoria_reddituale",op:"==",val:"non_finanziabile"}]},out:{type:"KO",flag:"SOGGETTO_NON_FINANZIABILE",ref:"p.5",detail:"Senza categoria reddituale 1-7 e senza co-mutuatario valido"}},
+ {id:"NUCLEI_MAX",area:"immobile",reads:["nuclei"],when:{all:[{v:"nuclei",op:">",val:3}]},out:{type:"KO",flag:"OLTRE_3_NUCLEI",ref:"p.10",detail:"Immobile cointestato tra più di 3 nuclei familiari"}},
+ {id:"IMPORTO_MIN",area:"importo",reads:["importo"],when:{all:[{v:"importo",op:"<",val:50000}]},out:{type:"KO",flag:"SOTTO_IMPORTO_MINIMO",ref:"p.11",detail:"Importo minimo 50.000"}},
+ {id:"IMPORTO_MAX",area:"importo",reads:["importo"],when:{all:[{v:"importo",op:">",val:500000}]},out:{type:"REDUCE",formula:"fixed",param:500000,flag:"OLTRE_IMPORTO_MASSIMO",ref:"p.11",detail:"Importo massimo di prodotto"}},
+ {id:"LTV_ACQ_80",area:"ltv",reads:["finalita","ltv"],when:{all:[{v:"finalita",op:"in",val:["acquisto"]},{v:"ltv",op:">",val:0.80}]},out:{type:"REDUCE",formula:"ltv_min",param:0.80,flag:"LTV_OLTRE_80",ref:"p.11",detail:"LTV massimo 80% su acquisto: ridurre l'importo"}},
+ {id:"LTV_HLTV_95",area:"ltv",reads:["finalita","ltv"],when:{all:[{v:"finalita",op:"in",val:["hltv"]},{v:"ltv",op:">",val:0.95}]},out:{type:"REDUCE",formula:"ltv_min",param:0.95,flag:"LTV_OLTRE_95",ref:"p.11, p.34",detail:"HLTV: LTV massimo 95%"}},
+ {id:"HLTV_IMPORTO",area:"prodotto",reads:["finalita","importo"],when:{all:[{v:"finalita",op:"in",val:["hltv"]},{v:"importo",op:">",val:350000}]},out:{type:"KO",flag:"HLTV_OLTRE_350K",ref:"p.34",detail:"HLTV: oltre 350.000 non si procede"}},
+ {id:"LTV_AUTO_LIQ",area:"ltv",reads:["finalita","is_autonomo","ltv"],when:{all:[{v:"finalita",op:"in",val:["liquidita","rifinanziamento","ristrutturazione"]},{v:"is_autonomo",op:"==",val:true},{v:"ltv",op:">",val:0.60}]},out:{type:"REDUCE",formula:"ltv_perizia",param:0.60,flag:"LTV_AUTONOMI_60",ref:"p.11",detail:"Autonomi su liquidità/rifinanziamento: LTV massimo 60%"}},
+ {id:"ATECO_RISCHIO",area:"soggetto",reads:["ateco_segment","finalita","ltv"],when:{all:[{v:"ateco_segment",op:"in",val:RISK_ATECO},{v:"finalita",op:"in",val:["liquidita","rifinanziamento","ristrutturazione"]},{v:"ltv",op:">",val:0.50}]},out:{type:"REDUCE",formula:"ltv_perizia",param:0.50,flag:"SEGMENTO_RISCHIO_LTV_50",ref:"p.19",detail:"Segmento ATECO a rischio: LTV massimo 50%"}},
+ {id:"DSR_HLTV",area:"reddito",reads:["finalita","dsr"],when:{all:[{v:"finalita",op:"in",val:["hltv"]},{v:"dsr",op:">",val:0.50}]},out:{type:"KO",flag:"DSR_HLTV_NO_DEROGHE",ref:"p.34",detail:"HLTV: DSR oltre 50%, nessuna deroga ammessa"}},
+ {id:"DSR_STD",area:"reddito",reads:["finalita","dsr"],when:{all:[{v:"finalita",op:"!=",val:"hltv"},{v:"dsr",op:">",val:0.50}]},out:{type:"REFER",who:"analista",flag:"DSR_OLTRE_50",ref:"p.12",detail:"Rapporto rata/reddito oltre soglia: valutazione analista"}},
+ {id:"MRI_KO",area:"reddito",reads:["reddito_residuo","mri_soglia"],when:{all:[{v:"reddito_residuo",op:"<var",val:"mri_soglia"}]},out:{type:"KO",flag:"MRI_INSUFFICIENTE",ref:"p.13",detail:"Reddito residuo sotto la soglia MRI di zona"}},
+ {id:"PROP_A6",area:"immobile",reads:["categoria_catastale"],when:{all:[{v:"categoria_catastale",op:"==",val:"A6"}]},out:{type:"KO",flag:"CATASTO_A6",ref:"p.24",detail:"Categoria A/6 non finanziabile"}},
+ {id:"PROP_A1",area:"immobile",reads:["categoria_catastale"],when:{all:[{v:"categoria_catastale",op:"==",val:"A1"}]},out:{type:"REFER",who:"MLC",flag:"CATASTO_A1_MLC",ref:"p.24",detail:"Categoria A/1: approvazione MLC"}},
+ {id:"PROP_DIFF_GRAVE",area:"immobile",reads:["difformita"],when:{all:[{v:"difformita",op:"==",val:"grave"}]},out:{type:"KO",flag:"DIFFORMITA_GRAVE",ref:"p.25",detail:"Difformità edilizia grave non sanabile"}},
+ {id:"RES_RIENTRO",area:"soggetto",reads:["rientro_cervelli","mesi_residenza"],when:{all:[{v:"rientro_cervelli",op:"==",val:true},{v:"mesi_residenza",op:"<",val:6}]},out:{type:"CONDITION",flag:"STIPULA_A_6_MESI",ref:"p.4",detail:"Stipula condizionata al raggiungimento dei 6 mesi di residenza"}},
+ /* esempio didattico del pitch: il gioielliere */
+ {id:"GIOIELLIERE_U30",area:"esempio",reads:["professione","eta","importo"],when:{all:[{v:"professione",op:"==",val:"gioielliere"},{v:"eta",op:"<",val:30},{v:"importo",op:">",val:100000}]},out:{type:"REDUCE",formula:"fixed",param:100000,flag:"MUTUO_RICHIESTO_LOWER",ref:"esempio",detail:"Gioielliere under 30: massimo 100.000"}},
+ {id:"GIOIELLIERE_O30",area:"esempio",reads:["professione","eta","importo"],when:{all:[{v:"professione",op:"==",val:"gioielliere"},{v:"eta",op:">=",val:30},{v:"importo",op:">",val:50000}]},out:{type:"REDUCE",formula:"fixed",param:50000,flag:"MUTUO_RICHIESTO_LOWER",ref:"esempio",detail:"Gioielliere over 30: massimo 50.000"}},
+];
+
+/* ============ derived layer (deterministic) ============ */
+function derive(f){
+  const d={};
+  d.eta_a_scadenza=f.eta+f.durata_mesi/12;
+  const tasso=f.tasso_type==="variabile"?(0.021+0.012+0.005):0.038; /* euribor+spread+plug | fisso */
+  const i=tasso/12,n=f.durata_mesi;
+  d.rata=i>0? f.importo*i/(1-Math.pow(1+i,-n)) : f.importo/n;
+  const den=(f.finalita==="acquisto"||f.finalita==="hltv")?Math.min(f.compromesso||f.perizia,f.perizia):f.perizia;
+  d.ltv=den>0?f.importo/den:99;
+  d.ltc=(f.compromesso>0)?f.importo/f.compromesso:null;
+  let rn=f.reddito_lavoro;
+  const loc=Math.min((f.reddito_locazione||0)*0.8,f.reddito_lavoro); rn+=loc;
+  rn+=(f.reddito_mantenimento||0)*0.5;
+  rn-=(f.oneri_non_finanziari||0);
+  d.reddito_netto=Math.max(rn,1);
+  d.dsr=(d.rata+(f.impegni_mensili||0))/d.reddito_netto;
+  const fam=Math.min(Math.max(f.family_size,1),7);
+  d.mri_soglia=MRI[f.region][f.city_type][fam-1]*(f.is_abitazione_principale?1:1.5);
+  d.reddito_residuo=d.reddito_netto-d.rata-(f.impegni_mensili||0);
+  d.is_autonomo=(f.categoria_reddituale==="autonomo");
+  return d;
+}
+
+/* ============ evaluator ============ */
+const SEV={KO:4,REDUCE:3,CONDITION:2,REFER:1,OK:0};
+function test(c,ctx){const a=ctx[c.v];if(a===undefined)return null;
+  let b=(c.op==="<var")?ctx[c.val]:c.val;if(b===undefined)return null;
+  switch(c.op){case">":return a>b;case">=":return a>=b;case"<":case"<var":return a<b;case"<=":return a<=b;
+  case"==":return a===b;case"!=":return a!==b;case"in":return Array.isArray(b)&&b.includes(a);}return false}
+function reduceAmount(r,ctx){const p=r.out.param;
+  if(r.out.formula==="fixed")return p;
+  if(r.out.formula==="ltv_min")return p*Math.min(ctx.compromesso||ctx.perizia,ctx.perizia);
+  if(r.out.formula==="ltv_perizia")return p*ctx.perizia;return null}
+function evaluate(f,rules){
+  const d=derive(f);const ctx={...f,...d};
+  const fired=[],needs=[];
+  for(const r of rules){let ok=true,missing=false;
+    for(const c of r.when.all){const t=test(c,ctx);if(t===null){missing=true;break}if(!t){ok=false;break}}
+    if(missing){needs.push(r.id);continue}
+    if(ok)fired.push(r);}
+  let worst="OK",maxA=null;
+  for(const r of fired){if(SEV[r.out.type]>SEV[worst])worst=r.out.type;
+    if(r.out.type==="REDUCE"){const a=reduceAmount(r,ctx);if(a!==null)maxA=(maxA===null)?a:Math.min(maxA,a)}}
+  return{outcome:worst,fired,maxAmount:maxA,needs,derived:d};
+}
+
+/* ============ portfolio (seeded) ============ */
+const REGIONS=["Nord","Centro","Sud"],CITIES=["Metropoli","Grande","Piccolo"];
+const CATS=["dipendente","dipendente","dipendente","autonomo","pensionato"];
+const PROFS=["impiegato","operaio","medico","gioielliere","insegnante","commerciante"];
+const FINS=["acquisto","acquisto","acquisto","hltv","liquidita","rifinanziamento","surroga"];
+const SEGS=[null,null,null,null,null,null,"travel","restaurants","entertainment"];
+function genProfile(rng,i){
+  const perizia=90000+Math.floor(rng()*360000);
+  const ltvT=0.45+rng()*0.55;
+  const reddito=1300+Math.floor(rng()*3800);
+  const afford=reddito*87*(0.55+rng()*0.65); /* rata plausibile vs reddito */
+  const rc=rng()<0.04;
+  const eta=23+Math.floor(rng()*45);
+  const durOk=[180,240,300,360].filter(m=>eta+m/12<=82);
+  const f={id:"P"+String(i+1).padStart(4,"0"),
+    eta,
+    professione:PROFS[Math.floor(rng()*PROFS.length)],
+    categoria_reddituale:CATS[Math.floor(rng()*CATS.length)],
+    ateco_segment:SEGS[Math.floor(rng()*SEGS.length)],
+    finalita:FINS[Math.floor(rng()*FINS.length)],
+    perizia,compromesso:Math.round(perizia*(0.92+rng()*0.16)),
+    importo:Math.max(50000,Math.round(Math.min(perizia*ltvT,afford)/1000)*1000),
+    durata_mesi:durOk.length?durOk[Math.floor(rng()*durOk.length)]:240,
+    tasso_type:rng()<0.5?"fisso":"variabile",
+    reddito_lavoro:reddito,
+    reddito_locazione:rng()<0.15?300+Math.floor(rng()*900):0,
+    reddito_mantenimento:0,oneri_non_finanziari:rng()<0.2?150+Math.floor(rng()*350):0,
+    impegni_mensili:rng()<0.4?100+Math.floor(rng()*500):0,
+    region:REGIONS[Math.floor(rng()*3)],city_type:CITIES[Math.floor(rng()*3)],
+    family_size:1+Math.floor(rng()*3),
+    is_abitazione_principale:rng()<0.88,
+    categoria_catastale:rng()<0.015?"A6":(rng()<0.015?"A1":"A2"),
+    difformita:rng()<0.02?"grave":"nessuna",
+    nuclei:rng()<0.025?4:1+Math.floor(rng()*2),
+    cassa_integrazione_pct:rng()<0.02?30:0,
+    rientro_cervelli:rc,mesi_residenza:rc?2+Math.floor(rng()*10):60};
+  if(f.finalita==="hltv"){f.importo=Math.round(f.perizia*(0.81+rng()*0.16)/1000)*1000}
+  return f;
+}
+const rng=mulberry32(42);
+const PORTFOLIO=Array.from({length:1200},(_,i)=>genProfile(rng,i));
+
+/* ============ scenarios: patches on rule DATA ============ */
+function cloneRules(){return JSON.parse(JSON.stringify(RULES))}
+const SCENARIOS=[
+ {id:"s0",title:"Età massima a scadenza",unit:"anni",
+  desc:"Oggi il mutuo deve chiudersi entro gli 80 anni. Se la banca abbassa il limite, i richiedenti più anziani non qualificano più.",
+  min:70,max:85,step:1,def:80,fmt:v=>v+" anni",
+  say:v=>v<80?("abbassato l'età massima a scadenza da 80 a "+v+" anni"):v>80?("alzato l'età massima a scadenza da 80 a "+v+" anni"):"lasciato l'età massima a 80 anni",
+  apply:(rules,v)=>{const r=rules.find(x=>x.id==="SUBJ_ETA_MAX");r.when.all[0].val=v}},
+ {id:"s1",title:"Tetto LTV su acquisto",unit:"%",
+  desc:"Oggi si finanzia fino all'80% del valore. Se la banca stringe, chi chiede troppo rispetto alla casa deve ridurre l'importo.",
+  min:0.60,max:0.85,step:0.01,def:0.80,fmt:v=>Math.round(v*100)+"%",
+  say:v=>(v<0.8?"stretto":v>0.8?"allargato":"lasciato")+" il tetto LTV su acquisto a "+Math.round(v*100)+"%",
+  apply:(rules,v)=>{const r=rules.find(x=>x.id==="LTV_ACQ_80");r.when.all[1].val=v;r.out.param=v}},
+ {id:"s2",title:"Soglia rata/reddito (DSR)",unit:"%",
+  desc:"Oggi la rata non può superare il 50% del reddito. Se la banca allenta, chi era al limite rientra e torna finanziabile.",
+  min:0.45,max:0.65,step:0.01,def:0.50,fmt:v=>Math.round(v*100)+"%",
+  say:v=>(v>0.5?"allentato":v<0.5?"stretto":"lasciato")+" la soglia rata/reddito al "+Math.round(v*100)+"%",
+  apply:(rules,v)=>{for(const id of["DSR_STD","DSR_HLTV"]){const r=rules.find(x=>x.id===id);r.when.all[1].val=v}}},
+ {id:"s3",title:"Cap importo gioielliere (il tuo esempio)",unit:"€",
+  desc:"Importo massimo concedibile a un gioielliere over 30. Di default 50k: alzalo e alcuni gioiellieri smettono di essere tagliati.",
+  min:30000,max:120000,step:5000,def:50000,fmt:v=>"€"+(v/1000)+"k",
+  say:v=>"portato il cap gioielliere over 30 a €"+(v/1000)+"k",
+  apply:(rules,v)=>{const r=rules.find(x=>x.id==="GIOIELLIERE_O30");r.when.all[2].val=v;r.out.param=v}},
+];
+
+/* ============ tab 1 UI ============ */
+const FIELDS=[
+ ["eta","Età","number",34],["professione","Professione","select",PROFS],
+ ["categoria_reddituale","Categoria","select",["dipendente","autonomo","pensionato"]],
+ ["finalita","Finalità","select",["acquisto","hltv","liquidita","rifinanziamento","surroga"]],
+ ["importo","Importo richiesto €","number",180000],["perizia","Perizia €","number",210000],
+ ["compromesso","Compromesso €","number",200000],["durata_mesi","Durata (mesi)","number",300],
+ ["tasso_type","Tasso","select",["fisso","variabile"]],
+ ["reddito_lavoro","Reddito netto/mese €","number",2400],["impegni_mensili","Impegni/mese €","number",150],
+ ["region","Area","select",REGIONS],["city_type","Città","select",CITIES],
+ ["family_size","Nucleo (persone)","number",2],
+ ["categoria_catastale","Cat. catastale","select",["A2","A3","A1","A6"]],
+ ["ateco_segment","Segmento ATECO","select",["","travel","restaurants","accomodation","entertainment"]],
+];
+const fEl=document.getElementById("form");
+for(const[k,lab,ty,dv]of FIELDS){const w=document.createElement("div");
+  const l=document.createElement("label");l.textContent=lab;l.htmlFor="f_"+k;w.appendChild(l);
+  let inp;if(ty==="select"){inp=document.createElement("select");for(const o of dv){const op=document.createElement("option");op.value=o;op.textContent=o===""?"nessuno":o;inp.appendChild(op)}}
+  else{inp=document.createElement("input");inp.type="number";inp.value=dv}
+  inp.id="f_"+k;w.appendChild(inp);fEl.appendChild(w)}
+const EUR=new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+function readForm(){const f={};for(const[k,,ty]of FIELDS){const el=document.getElementById("f_"+k);
+  f[k]=(ty==="number")?Number(el.value):el.value}
+  if(f.ateco_segment==="")f.ateco_segment=null;
+  f.reddito_locazione=0;f.reddito_mantenimento=0;f.oneri_non_finanziari=0;
+  f.is_abitazione_principale=true;f.difformita="nessuna";f.nuclei=1;f.cassa_integrazione_pct=0;
+  f.rientro_cervelli=false;f.mesi_residenza=60;return f}
+document.getElementById("runBtn").addEventListener("click",()=>{
+  const f=readForm();const r=evaluate(f,RULES);const d=r.derived;
+  const flags=r.fired.filter(x=>x.out.type!=="OK");
+  let h='<span class="chip c-'+r.outcome+'"><span class="d"></span>'+r.outcome+'</span>';
+  h+='<div class="verdict-big">'+({OK:"Fattibile",REDUCE:"Fattibile riducendo l'importo",CONDITION:"Fattibile con condizione",REFER:"Serve valutazione umana",KO:"Non fattibile"})[r.outcome]+"</div>";
+  if(r.maxAmount)h+='<p style="margin:4px 0 10px">Importo massimo concedibile: <b>'+EUR.format(r.maxAmount)+"</b></p>";
+  /* indice di fattibilita: margine deterministico dalle soglie, non ML */
+  {const risk=RISK_ATECO.includes(f.ateco_segment);
+   const liq=["liquidita","rifinanziamento","ristrutturazione"].includes(f.finalita);
+   const ltvCap=f.finalita==="hltv"?0.95:(liq?(d.is_autonomo?0.60:(risk?0.50:0.80)):0.80);
+   const gates=[["LTV",d.ltv/ltvCap],["DSR",d.dsr/0.50],["MRI",d.mri_soglia/Math.max(d.reddito_residuo,1)]];
+   const gs=x=>Math.max(0,Math.min(100,x<=0.6?100:(x<1?50+50*(1-x)/0.4:50-50*(x-1)/0.4)));
+   let idx=100,binding="";for(const[n,ra]of gates){const s=gs(ra);if(s<idx){idx=s;binding=n}}
+   if(r.outcome==="KO")idx=0;else if(r.outcome==="REDUCE")idx=Math.min(idx,45);
+   else if(r.outcome==="REFER")idx=Math.min(idx,60);else if(r.outcome==="CONDITION")idx=Math.min(idx,75);
+   const col=idx>=70?"var(--ok)":(idx>=45?"var(--reduce)":"var(--ko)");
+   h+='<div style="margin:10px 0 4px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:.72rem;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Indice di fattibilità</span><span class="big" style="font-size:1.5rem;color:'+col+'">'+Math.round(idx)+"%</span></div>"+
+    '<div class="meter" style="height:8px"><i style="width:'+Math.round(idx)+'%;background:'+col+'"></i></div>'+
+    '<p class="note" style="margin-top:5px">'+(idx>0?"Vincolo più stretto: <b>"+binding+"</b>. ":"")+"Margine deterministico dalle soglie di policy, non una probabilità ML. Stima soggetta a verifica documentale.</p></div>"}
+  for(const fl of flags)h+='<div class="flag f-'+fl.out.type+'"><b>'+fl.out.flag+"</b> · "+fl.out.detail+' <span class="ref">['+fl.out.ref+"]</span></div>";
+  if(!flags.length)h+='<p class="note">Nessuna regola ostativa scattata.</p>';
+  h+='<h3>Numeri del motore</h3><div class="kv">';
+  const rows=[["LTV",(d.ltv*100).toFixed(1)+"%",d.ltv/0.95],["DSR",(d.dsr*100).toFixed(1)+"%",d.dsr/0.5],
+   ["Rata stimata",EUR.format(d.rata),null],["Reddito residuo",EUR.format(d.reddito_residuo),null],
+   ["Soglia MRI zona",EUR.format(d.mri_soglia),d.mri_soglia/Math.max(d.reddito_residuo,1)]];
+  for(const[n,v,ratio]of rows){h+='<span class="n">'+n+"</span>";
+    if(ratio!==null){const pct=Math.min(ratio*100,100);const cls=ratio>1?"bad":(ratio>0.9?"warn":"");
+      h+='<span class="meter"><i class="'+cls+'" style="width:'+pct.toFixed(0)+'%"></i></span>'}
+    else h+="<span></span>";h+='<span class="v">'+v+"</span>"}
+  h+="</div>";
+  if(r.needs.length)h+='<p class="note">needs_data: '+r.needs.length+" regole non valutabili (variabili mancanti) — mai un esito inventato.</p>";
+  document.getElementById("vOut").innerHTML=h;
+});
+
+/* ============ tab 2 UI ============ */
+document.getElementById("pfN").textContent=PORTFOLIO.length.toLocaleString("it-IT");
+const baseline=PORTFOLIO.map(p=>evaluate(p,RULES));
+function distOf(res){const d={OK:0,REDUCE:0,CONDITION:0,REFER:0,KO:0};for(const r of res)d[r.outcome]++;return d}
+const baseDist=distOf(baseline);
+let active=null,activeVal=null;
+const scEl=document.getElementById("scens");
+for(const s of SCENARIOS){const div=document.createElement("div");div.className="scen";div.id="sc_"+s.id;
+  div.innerHTML="<h4>"+s.title+"</h4><p>"+s.desc+'</p><div class="sl"><input type="range" min="'+s.min+'" max="'+s.max+'" step="'+s.step+'" value="'+s.def+'" aria-label="'+s.title+'"><span class="val">'+s.fmt(s.def)+"</span></div>";
+  const range=div.querySelector("input");
+  range.addEventListener("input",()=>{active=s;activeVal=Number(range.value);
+    div.querySelector(".val").textContent=s.fmt(activeVal);
+    for(const o of document.querySelectorAll(".scen"))o.classList.toggle("on",o===div);
+    recompute()});
+  scEl.appendChild(div)}
+const CHIPS=["OK","REDUCE","CONDITION","REFER","KO"];
+const COLORS={OK:"var(--ok)",REDUCE:"var(--reduce)",CONDITION:"var(--cond)",REFER:"var(--refer)",KO:"var(--ko)"};
+function renderDist(before,after){let h="";
+  for(const k of CHIPS){const b=before[k]/PORTFOLIO.length*100,a=(after?after[k]:before[k])/PORTFOLIO.length*100;
+    h+='<div class="brow"><span class="bl" style="color:'+COLORS[k]+'">'+k+'</span><span class="btrack">'+
+     '<span class="bghost" style="width:'+b.toFixed(1)+'%;background:'+COLORS[k]+'"></span>'+
+     '<span class="bfill" style="width:'+a.toFixed(1)+'%;background:'+COLORS[k]+'"></span></span>'+
+     '<span class="bnum">'+b.toFixed(1)+"% → "+a.toFixed(1)+"%</span></div>"}
+  document.getElementById("dist").innerHTML=h}
+function recompute(){
+  if(!active){renderDist(baseDist,null);return}
+  const t0=performance.now();
+  const rules=cloneRules();active.apply(rules,activeVal);
+  /* scoping: chi ha fired la regola cambiata PRIMA, o matcha il nuovo when ADESSO */
+  const changedIds=new Set();
+  for(let i=0;i<RULES.length;i++){if(JSON.stringify(RULES[i])!==JSON.stringify(rules[i]))changedIds.add(RULES[i].id)}
+  const cohort=[];
+  for(let i=0;i<PORTFOLIO.length;i++){
+    const firedBefore=baseline[i].fired.some(r=>changedIds.has(r.id));
+    let matchNow=false;
+    if(!firedBefore){const ctx={...PORTFOLIO[i],...baseline[i].derived};
+      for(const id of changedIds){const nr=rules.find(x=>x.id===id);let all=true;
+        for(const c of nr.when.all){const t=test(c,ctx);if(t!==true){all=false;break}}
+        if(all){matchNow=true;break}}}
+    if(firedBefore||matchNow)cohort.push(i)}
+  const after=baseline.slice();
+  const flips=[];
+  for(const i of cohort){const nv=evaluate(PORTFOLIO[i],rules);after[i]=nv;
+    if(nv.outcome!==baseline[i].outcome)flips.push({p:PORTFOLIO[i],from:baseline[i].outcome,to:nv.outcome})}
+  const ms=performance.now()-t0;
+  const ad=distOf(after);
+  const feas=d=>(PORTFOLIO.length-d.KO)/PORTFOLIO.length*100;
+  const okB=feas(baseDist),okA=feas(ad),dl=okA-okB;
+  document.getElementById("okBefore").textContent=okB.toFixed(1)+"%";
+  document.getElementById("okAfter").textContent=okA.toFixed(1)+"%";
+  const de=document.getElementById("okDelta");de.textContent=(dl>=0?"+":"")+dl.toFixed(1)+" pt";
+  de.className="big delta "+(dl>0?"up":dl<0?"down":"");
+  renderDist(baseDist,ad);
+  document.getElementById("cohN").textContent=cohort.length+" / "+PORTFOLIO.length+" ("+(cohort.length/PORTFOLIO.length*100).toFixed(1)+"%)";
+  document.getElementById("cohMeter").style.width=(cohort.length/PORTFOLIO.length*100).toFixed(1)+"%";
+  document.getElementById("calcMs").textContent=ms.toFixed(1)+" ms · solo "+cohort.length+" clienti, no AI";
+  const okko=flips.filter(f=>SEV[f.to]>SEV[f.from]),koko=flips.filter(f=>SEV[f.to]<SEV[f.from]);
+  /* ---- banner in italiano ---- */
+  const bn=document.getElementById("banner");
+  if(!flips.length){bn.className="banner flat";
+    bn.innerHTML="<span class='lead'>Hai "+active.say(activeVal)+".</span>A questa soglia <b>nessun cliente cambia esito</b>. Nessuna notifica da inviare.";}
+  else{const worse=okko.length,better=koko.length;
+    bn.className="banner "+(worse>=better?"worse":"better");
+    let msg="<span class='lead'>Hai "+active.say(activeVal)+".</span>";
+    const parts=[];
+    if(worse)parts.push("<span class='hl' style='color:var(--ko)'>"+worse+" clienti</span> non sono più finanziabili (erano OK, ora KO o peggiorati)");
+    if(better)parts.push("<span class='hl' style='color:var(--ok)'>"+better+" clienti</span> tornano finanziabili (KO → idonei)");
+    msg+=parts.join(" · ")+". Devi <b>avvisare "+flips.length+" persone</b>. Ricalcolo su "+cohort.length+" clienti in "+ms.toFixed(1)+" ms, senza rileggere un documento.";
+    bn.innerHTML=msg;}
+  let h="";
+  const row=f=>'<tr><td class="mono">'+f.p.id+"</td><td>"+f.p.professione+", "+f.p.eta+" anni</td><td>"+EUR.format(f.p.importo)+'</td><td><span class="chip c-'+f.from+'">'+f.from+'</span> → <span class="chip c-'+f.to+'">'+f.to+"</span></td></tr>";
+  if(okko.length){h+="<h3>Peggiorano ("+okko.length+") · da avvisare</h3><table><thead><tr><th>ID</th><th>Profilo</th><th>Importo</th><th>Esito</th></tr></thead><tbody>"+okko.slice(0,6).map(row).join("")+"</tbody></table>"}
+  if(koko.length){h+="<h3>Migliorano ("+koko.length+") · opportunità KO→OK</h3><table><thead><tr><th>ID</th><th>Profilo</th><th>Importo</th><th>Esito</th></tr></thead><tbody>"+koko.slice(0,6).map(row).join("")+"</tbody></table>"}
+  if(!flips.length)h='<p class="note">Nessun flip a questa soglia.</p>';
+  document.getElementById("flips").innerHTML=h;
+}
+renderDist(baseDist,null);
+document.getElementById("okBefore").textContent=((PORTFOLIO.length-baseDist.KO)/PORTFOLIO.length*100).toFixed(1)+"%";
+
+/* ============ tab 3: KG stats ============ */
+(function(){const vars=new Set(),edges={reads:0,emits:0,cites:0};
+  for(const r of RULES){for(const v of r.reads){vars.add(v);edges.reads++}edges.emits++;if(r.out.ref)edges.cites++}
+  const kv=document.getElementById("kgStats");
+  kv.innerHTML='<span class="n">Regole (nodi)</span><span></span><span class="v">'+RULES.length+"</span>"+
+   '<span class="n">Variabili (nodi)</span><span></span><span class="v">'+vars.size+"</span>"+
+   '<span class="n">Archi reads / emits / cites</span><span></span><span class="v">'+edges.reads+" / "+edges.emits+" / "+edges.cites+"</span>";
+  document.getElementById("kgSample").textContent='{"q":"chi legge ltv?"} → '+RULES.filter(r=>r.reads.includes("ltv")).map(r=>r.id).join(", ");
+})();
+document.getElementById("verTag").textContent="ruleset demo v1 · policy 2024.1.0 · seed 42";
+
+/* ============ tab 4: dietro le quinte (dati reali engine) ============ */
+const ENGINE={vars:356,rules:359,golden:{total:48,passed:48},graph:{nodes:1087,edges:1783},
+ areas:{finalita:{rules:75,vars:52},hltv:{rules:28,vars:31},immobile:{rules:53,vars:62},processo:{rules:82,vars:70},reddito:{rules:39,vars:64},soggetto:{rules:82,vars:77}},
+ files:[["rules-soggetto.json","50.7 KB"],["rules-processo.json","46.5 KB"],["rules-finalita.json","45.0 KB"],["rules-immobile.json","33.2 KB"],["rules-reddito.json","21.5 KB"],["rules-hltv.json","16.1 KB"],["variables-soggetto.json","14.6 KB"],["variables-reddito.json","12.9 KB"],["variables-processo.json","12.0 KB"],["variables-immobile.json","10.4 KB"],["variables-finalita.json","8.1 KB"],["variables-hltv.json","7.4 KB"],["evaluator.py","17.0 KB"],["graph.json","329.2 KB"],["goldens-ratio.json","14.9 KB"],["goldens-ltv.json","10.5 KB"],["sim.py","12.2 KB"],["lint.py","8.4 KB"]],
+ sampleRule:{id:"RATIO_R2.3.1-1",area:"reddito",reads:["durata_residua_esposizione","is_carta_credito_rimborso_rateale"],when:"durata_residua_esposizione > 9 and is_carta_credito_rimborso_rateale == False",outcome:{type:"CONDITION",flag:"DSR_NUMERATORE_INCLUSIONE",detail:"Esposizione rateale con durata residua > 9 mesi, escluse carte a rimborso rateale: inclusa nel numeratore del DSR."},policy_ref:"p.12",version:"2024.1.0"},
+ graphKinds:{variable:356,rule:359,flag:359,page:"~40",area:6}};
+(function(){
+ document.getElementById("beVars").textContent=ENGINE.vars;
+ document.getElementById("beRules").textContent=ENGINE.rules;
+ const gg=document.getElementById("beGolden");gg.textContent=ENGINE.golden.passed+"/"+ENGINE.golden.total;gg.style.color="var(--ok)";
+ let ah="";for(const[a,c]of Object.entries(ENGINE.areas))ah+="<tr><td>"+a+"</td><td>"+c.vars+"</td><td>"+c.rules+"</td></tr>";
+ document.querySelector("#beAreas tbody").innerHTML=ah;
+ let fh="";for(const[n,s]of ENGINE.files)fh+='<tr><td class="mono">'+n+'</td><td class="bnum">'+s+"</td></tr>";
+ document.querySelector("#beFiles tbody").innerHTML=fh;
+ document.getElementById("beRule").textContent=JSON.stringify(ENGINE.sampleRule,null,1);
+ document.getElementById("beGraphN").textContent=ENGINE.graph.nodes;
+ document.getElementById("beGraphE").textContent=ENGINE.graph.edges;
+ let kh="";for(const[k,v]of Object.entries(ENGINE.graphKinds))kh+='<span class="n">'+k+"</span><span></span><span class=\"v\">"+v+"</span>";
+ document.getElementById("beGraphKinds").innerHTML=kh;
+})();
+
+/* ---- graph.json excerpt (reale) ---- */
+document.getElementById("beGraphJson").textContent=JSON.stringify({
+ meta:{source:"Politiche del Credito ING 2024 v1.0",variables:343,rules:359,nodes:1087,edges:1783,
+   node_kinds:{variable:343,rule:359,flag:325,page:53,area:7}},
+ nodes:[{id:"var:tipo_prodotto",kind:"variable",label:"tipo_prodotto",type:"enum",area:"finalita",derived:false},
+   {id:"rule:FIN_066",kind:"rule",label:"FIN_066",area:"finalita",outcome:"OK",policy_ref:"p.11"},
+   {"…":"1085 altri nodi"}],
+ edges:[{from:"rule:FIN_066",rel:"reads",to:"var:ltv"},
+   {from:"rule:FIN_066",rel:"emits",to:"flag:LTV_DENOMINATORE_MIN_COMPROMESSO_PERIZIA"},
+   {from:"rule:FIN_066",rel:"cites",to:"page:p.11"},
+   {"…":"1780 altri archi"}]
+},null,1);
+
+/* ---- subgraph reale, visualizzato su canvas ---- */
+const SUB={nodes:[{id:"var:ltv",kind:"variable",label:"ltv"},{id:"rule:FIN_066",kind:"rule",label:"FIN_066",outcome:"OK"},{id:"rule:FIN_067",kind:"rule",label:"FIN_067",outcome:"OK"},{id:"rule:HLTV_10",kind:"rule",label:"HLTV_10",outcome:"REDUCE"},{id:"rule:HLTV_25",kind:"rule",label:"HLTV_25",outcome:"OK"},{id:"var:eta",kind:"variable",label:"eta"},{id:"rule:SUBJ_ETA_MIN",kind:"rule",label:"SUBJ_ETA_MIN",outcome:"KO"},{id:"var:mutuo_richiesto",kind:"variable",label:"mutuo_richiesto"},{id:"rule:FIN_052",kind:"rule",label:"FIN_052",outcome:"KO"},{id:"rule:FIN_053",kind:"rule",label:"FIN_053",outcome:"KO"},{id:"rule:FIN_056",kind:"rule",label:"FIN_056",outcome:"KO"},{id:"var:perizia",kind:"variable",label:"perizia"},{id:"rule:FIN_006",kind:"rule",label:"FIN_006",outcome:"REDUCE"},{id:"rule:FIN_008",kind:"rule",label:"FIN_008",outcome:"REDUCE"},{id:"rule:FIN_010",kind:"rule",label:"FIN_010",outcome:"REDUCE"},{id:"var:reddito_netto_mensile",kind:"variable",label:"reddito_netto_mensile"},{id:"rule:DOC_032",kind:"rule",label:"DOC_032",outcome:"CONDITION"},{id:"var:categoria_catastale",kind:"variable",label:"categoria_catastale"},{id:"rule:IMM_A6",kind:"rule",label:"IMM_A6",outcome:"KO"},{id:"rule:IMM_A1",kind:"rule",label:"IMM_A1",outcome:"REFER"},{id:"flag:LTV_MIN_COMPR_PERIZIA",kind:"flag",label:"LTV_DENOM_MIN"},{id:"flag:HLTV_LTV_FUORI_RANGE",kind:"flag",label:"HLTV_LTV_RANGE"},{id:"flag:SUBJ_ETA_MIN_KO",kind:"flag",label:"ETA_MIN_KO"},{id:"flag:IMPORTO_MIN_ACQ",kind:"flag",label:"IMPORTO_MIN"},{id:"flag:IMPORTO_MAX_500K",kind:"flag",label:"IMPORTO_MAX_500K"},{id:"flag:IMPORTO_HLTV_RANGE",kind:"flag",label:"IMPORTO_HLTV"},{id:"flag:IMPORTO_MAX_LTV80_QUOTA",kind:"flag",label:"MAX_LTV80_QUOTA"},{id:"flag:MAX_EX_CONIUGE",kind:"flag",label:"MAX_EX_CONIUGE"},{id:"flag:MAX_COEREDI",kind:"flag",label:"MAX_COEREDI"},{id:"flag:RISPARMIO_INSUFF",kind:"flag",label:"RISPARMIO_INSUFF"},{id:"flag:CATASTO_A6",kind:"flag",label:"CATASTO_A6"},{id:"flag:CATASTO_A1_MLC",kind:"flag",label:"CATASTO_A1_MLC"}],
+ edges:[["rule:FIN_066","var:ltv"],["rule:FIN_067","var:ltv"],["rule:HLTV_10","var:ltv"],["rule:HLTV_25","var:ltv"],["rule:SUBJ_ETA_MIN","var:eta"],["rule:FIN_052","var:mutuo_richiesto"],["rule:FIN_053","var:mutuo_richiesto"],["rule:FIN_056","var:mutuo_richiesto"],["rule:FIN_006","var:perizia"],["rule:FIN_008","var:perizia"],["rule:FIN_010","var:perizia"],["rule:DOC_032","var:reddito_netto_mensile"],["rule:IMM_A6","var:categoria_catastale"],["rule:IMM_A1","var:categoria_catastale"],["rule:FIN_066","flag:LTV_MIN_COMPR_PERIZIA"],["rule:HLTV_10","flag:HLTV_LTV_FUORI_RANGE"],["rule:SUBJ_ETA_MIN","flag:SUBJ_ETA_MIN_KO"],["rule:FIN_052","flag:IMPORTO_MIN_ACQ"],["rule:FIN_053","flag:IMPORTO_MAX_500K"],["rule:FIN_056","flag:IMPORTO_HLTV_RANGE"],["rule:FIN_006","flag:IMPORTO_MAX_LTV80_QUOTA"],["rule:FIN_008","flag:MAX_EX_CONIUGE"],["rule:FIN_010","flag:MAX_COEREDI"],["rule:DOC_032","flag:RISPARMIO_INSUFF"],["rule:IMM_A6","flag:CATASTO_A6"],["rule:IMM_A1","flag:CATASTO_A1_MLC"]]};
+(function(){
+ const cv=document.getElementById("gcanvas"),ctx=cv.getContext("2d");
+ const W=900,H=560;
+ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+ const outCol=o=>({OK:"--ok",REDUCE:"--reduce",KO:"--ko",REFER:"--refer",CONDITION:"--refer"})[o]||"--accent";
+ const colOf=n=>n.kind==="variable"?css("--accent"):n.kind==="flag"?css("--faint"):css(outCol(n.outcome));
+ const cols={variable:0,rule:1,flag:2};
+ const byCol={0:[],1:[],2:[]};
+ for(const n of SUB.nodes)byCol[cols[n.kind]].push(n);
+ const pos={};const PAD=54,colX=[150,450,760];
+ for(const c of[0,1,2]){const arr=byCol[c],gap=(H-2*PAD)/(arr.length-1||1);
+   arr.forEach((n,i)=>{pos[n.id]={x:colX[c],y:PAD+i*gap,n}})}
+ const adj={};for(const[a,b]of SUB.edges){(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)}
+ let hover=null;
+ function draw(){
+  const dpr=window.devicePixelRatio||1;
+  if(cv.width!==W*dpr){cv.width=W*dpr;cv.height=H*dpr;ctx.scale(dpr,dpr)}
+  ctx.clearRect(0,0,W,H);
+  const lit=hover?new Set([hover,...(adj[hover]||[])]):null;
+  // edges
+  for(const[a,b]of SUB.edges){const p=pos[a],q=pos[b];if(!p||!q)continue;
+   const on=!lit||(lit.has(a)&&lit.has(b));
+   ctx.globalAlpha=on?(lit?0.9:0.28):0.06;
+   ctx.strokeStyle=css("--line2");ctx.lineWidth=on&&lit?1.6:1;
+   ctx.beginPath();ctx.moveTo(p.x,p.y);
+   const mx=(p.x+q.x)/2;ctx.bezierCurveTo(mx,p.y,mx,q.y,q.x,q.y);ctx.stroke()}
+  ctx.globalAlpha=1;
+  // nodes
+  for(const n of SUB.nodes){const p=pos[n.id];const on=!lit||lit.has(n.id);
+   ctx.globalAlpha=on?1:0.22;
+   const r=n.kind==="variable"?7:n.kind==="rule"?6:4.5;
+   ctx.fillStyle=colOf(n);ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fill();
+   ctx.fillStyle=css("--ink");ctx.font=(n.kind==="variable"?"600 ":"")+"11px ui-sans-serif,sans-serif";
+   ctx.textBaseline="middle";
+   if(n.kind==="variable"){ctx.textAlign="right";ctx.fillText(n.label,p.x-11,p.y)}
+   else if(n.kind==="flag"){ctx.textAlign="left";ctx.font="10px ui-monospace,monospace";ctx.fillText(n.label,p.x+8,p.y)}
+   else{ctx.textAlign="left";ctx.font="10px ui-monospace,monospace";ctx.fillText(n.label,p.x+9,p.y)}}
+  ctx.globalAlpha=1;
+  // column headers
+  ctx.fillStyle=css("--muted");ctx.font="600 10px ui-sans-serif";ctx.textAlign="center";
+  ctx.fillText("VARIABILI",colX[0]-30,22);ctx.fillText("REGOLE",colX[1],22);ctx.fillText("FLAG",colX[2]+30,22);
+ }
+ function pick(ev){const rc=cv.getBoundingClientRect();const sx=W/rc.width;
+   const mx=(ev.clientX-rc.left)*sx,my=(ev.clientY-rc.top)*sx;
+   let best=null,bd=400;
+   for(const n of SUB.nodes){const p=pos[n.id];const d=(p.x-mx)**2+(p.y-my)**2;if(d<bd){bd=d;best=n.id}}
+   return best}
+ cv.addEventListener("mousemove",e=>{const h=pick(e);if(h!==hover){hover=h;draw()}});
+ cv.addEventListener("mouseleave",()=>{hover=null;draw()});
+ draw();
+ // redraw on theme toggle
+ new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+})();
+
+/* ============ tabs ============ */
+for(const t of document.querySelectorAll(".tab")){t.addEventListener("click",()=>{
+  for(const x of document.querySelectorAll(".tab"))x.setAttribute("aria-selected",x===t);
+  for(const p of document.querySelectorAll(".panel"))p.classList.toggle("active",p.id===t.dataset.p)})}
+window.DELIBERA={RULES,PORTFOLIO,evaluate,derive};
+</script>
+
+</body>
+</html>
