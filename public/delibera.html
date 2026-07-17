@@ -513,19 +513,24 @@ document.getElementById("runBtn").addEventListener("click",()=>{
   let h='<span class="chip c-'+r.outcome+'"><span class="d"></span>'+r.outcome+'</span>';
   h+='<div class="verdict-big">'+({OK:"Fattibile",REDUCE:"Fattibile riducendo l'importo",CONDITION:"Fattibile con condizione",REFER:"Serve valutazione umana",KO:"Non fattibile"})[r.outcome]+"</div>";
   if(r.maxAmount)h+='<p style="margin:4px 0 10px">Importo massimo concedibile: <b>'+EUR.format(r.maxAmount)+"</b></p>";
-  /* indice di fattibilita: margine deterministico dalle soglie, non ML */
+  /* ROBUSTEZZA: quanto margine c'è verso le soglie. Non una probabilità: un OK è fattibile,
+     il numero dice solo quanto è solido. KO = 0 (nega). */
   {const risk=RISK_ATECO.includes(f.ateco_segment);
    const liq=["liquidita","rifinanziamento","ristrutturazione"].includes(f.finalita);
    const ltvCap=f.finalita==="hltv"?0.95:(liq?(d.is_autonomo?0.60:(risk?0.50:0.80)):0.80);
-   const gates=[["LTV",d.ltv/ltvCap],["DSR",d.dsr/0.50],["MRI",d.mri_soglia/Math.max(d.reddito_residuo,1)]];
-   const gs=x=>Math.max(0,Math.min(100,x<=0.6?100:(x<1?50+50*(1-x)/0.4:50-50*(x-1)/0.4)));
-   let idx=100,binding="";for(const[n,ra]of gates){const s=gs(ra);if(s<idx){idx=s;binding=n}}
-   if(r.outcome==="KO")idx=0;else if(r.outcome==="REDUCE")idx=Math.min(idx,45);
-   else if(r.outcome==="REFER")idx=Math.min(idx,60);else if(r.outcome==="CONDITION")idx=Math.min(idx,75);
-   const col=idx>=70?"var(--ok)":(idx>=45?"var(--reduce)":"var(--ko)");
-   h+='<div style="margin:10px 0 4px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:.72rem;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Indice di fattibilità</span><span class="big" style="font-size:1.5rem;color:'+col+'">'+Math.round(idx)+"%</span></div>"+
-    '<div class="meter" style="height:8px"><i style="width:'+Math.round(idx)+'%;background:'+col+'"></i></div>'+
-    '<p class="note" style="margin-top:5px">'+(idx>0?"Vincolo più stretto: <b>"+binding+"</b>. ":"")+"Margine deterministico dalle soglie di policy, non una probabilità ML. Stima soggetta a verifica documentale.</p></div>"}
+   const gates=[["LTV",d.ltv/ltvCap],["DSR",d.dsr/0.50],["margine reddito",d.mri_soglia/Math.max(d.reddito_residuo,1)]];
+   let worst=0,binding="";for(const[n,ra]of gates){if(ra>worst){worst=ra;binding=n}}
+   const headroom=Math.max(0,Math.min(1,1-worst)); // 0 = al limite, 1 = tutto margine
+   let idx,label,col;
+   if(r.outcome==="KO"){idx=0;label="Non fattibile";col="var(--ko)";}
+   else if(r.outcome==="OK"){idx=Math.round(72+28*headroom);
+     label=headroom>0.25?"Pratica solida":"Fattibile, ma al limite su "+binding;col="var(--ok)";}
+   else if(r.outcome==="CONDITION"){idx=68;label="Fattibile con una condizione";col="var(--cond)";}
+   else if(r.outcome==="REFER"){idx=55;label="Da valutare a mano";col="var(--refer)";}
+   else{idx=Math.round(38+7*headroom);label="Fattibile con una modifica";col="var(--reduce)";}
+   h+='<div style="margin:10px 0 4px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span style="font-size:.72rem;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Robustezza</span><span class="big" style="font-size:1.5rem;color:'+col+'">'+idx+"%</span></div>"+
+    '<div class="meter" style="height:8px"><i style="width:'+idx+'%;background:'+col+'"></i></div>'+
+    '<p class="note" style="margin-top:5px"><b style="color:var(--strong)">'+label+'.</b> Margine verso le soglie di policy (LTV, DSR, reddito minimo), non una probabilità statistica. Stima soggetta a verifica documentale.</p></div>';}
   if(flags.length){h+='<h3>Cosa fare</h3>';
     for(const fl of flags)h+='<div class="flag f-'+fl.out.type+'"><b>'+azione(fl,f,d,r)+"</b><div class=\"why\">"+fl.out.detail+' <span class="ref">['+fl.out.ref+"]</span></div></div>";}
   else h+='<p class="note">Nessuna regola ostativa: la pratica passa tutti i controlli automatici.</p>';
