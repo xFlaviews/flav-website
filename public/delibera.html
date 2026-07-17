@@ -4,10 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Delibera — Demo fattibilità mutui deterministica</title>
-<meta name="description" content="Demo di un motore decisionale deterministico per la fattibilità mutui: regole come dati versionati, ricalcolo scoped al cambio policy, grafo della conoscenza. Progetto personale di Flavius Miron.">
+<meta name="description" content="Motore decisionale deterministico per la fattibilità mutui: simula, cambia una regola, guarda chi cambia esito.">
 <meta name="robots" content="noindex">
-<meta property="og:title" content="Delibera — Demo fattibilità mutui">
-<meta property="og:description" content="Motore decisionale deterministico per il credito: simula, cambia una regola, guarda chi cambia esito.">
 </head>
 <body>
 <style>
@@ -75,6 +73,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .flag{border-left:3px solid var(--line2);padding:8px 12px;margin:8px 0;background:var(--panel);border-radius:0 8px 8px 0;font-size:.87rem}
 .flag b{color:var(--strong)}
 .flag .ref{font-family:var(--mono);font-size:.72rem;color:var(--accent-ink)}
+.flag .why{font-size:.79rem;color:var(--muted);margin-top:3px;font-weight:400}
+.flag b{font-weight:650;color:var(--strong)}
 .flag.f-KO{border-left-color:var(--ko)}.flag.f-REDUCE{border-left-color:var(--reduce)}
 .flag.f-CONDITION{border-left-color:var(--cond)}.flag.f-REFER{border-left-color:var(--refer)}
 .kv{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;font-size:.86rem;align-items:center}
@@ -479,6 +479,34 @@ function readForm(){const f={};for(const[k,,ty]of FIELDS){const el=document.getE
   f.reddito_locazione=0;f.reddito_mantenimento=0;f.oneri_non_finanziari=0;
   f.is_abitazione_principale=true;f.difformita="nessuna";f.nuclei=1;f.cassa_integrazione_pct=0;
   f.rientro_cervelli=false;f.mesi_residenza=60;return f}
+/* traduce un flag in azione concreta per il cliente */
+const AZIONI={
+ ETA_OLTRE_80_A_SCADENZA:"Accorcia la durata del mutuo, oppure aggiungi un co-mutuatario più giovane.",
+ CASSA_INTEGRAZIONE:"Non finanziabile finché la cassa integrazione supera il 25% dell'orario. Ripresenta a rientro dalla CIG.",
+ SOGGETTO_NON_FINANZIABILE:"Aggiungi un co-mutuatario con reddito valido (una delle categorie finanziabili 1-7).",
+ OLTRE_3_NUCLEI:"Riduci i nuclei familiari intestatari dell'immobile: il massimo è 3.",
+ SOTTO_IMPORTO_MINIMO:"Aumenta l'importo richiesto: il minimo di prodotto è 50.000 €.",
+ HLTV_OLTRE_350K:"Riduci l'importo sotto 350.000 €, il tetto del prodotto HLTV.",
+ DSR_HLTV_NO_DEROGHE:"Riduci l'importo o allunga la durata per portare la rata sotto il 50% del reddito. Su HLTV non sono ammesse deroghe.",
+ DSR_OLTRE_50:"Riduci l'importo o allunga la durata per abbassare la rata; in alternativa la pratica va valutata da un analista.",
+ MRI_INSUFFICIENTE:"Il reddito residuo è sotto la soglia minima di zona: riduci l'importo, allunga la durata o aggiungi un reddito.",
+ CATASTO_A6:"Immobile non finanziabile (categoria catastale A/6). Serve un altro immobile.",
+ CATASTO_A1_MLC:"Immobile di pregio (A/1): richiede l'approvazione del Comitato Crediti (MLC).",
+ DIFFORMITA_GRAVE:"Sana la difformità edilizia grave prima di procedere, oppure scegli un altro immobile.",
+ STIPULA_A_6_MESI:"Puoi procedere: la stipula sarà possibile al raggiungimento dei 6 mesi di residenza in Italia.",
+};
+function azione(fl,facts,d,r){
+ const t=fl.out.type;
+ if(t==="REDUCE"&&r.maxAmount!=null){
+   const diff=Math.max(0,facts.importo-r.maxAmount);
+   return "Riduci l'importo a "+EUR.format(r.maxAmount)+(diff>0?" (−"+EUR.format(diff)+"), oppure aumenta l'anticipo di "+EUR.format(diff)+".":".");
+ }
+ if(AZIONI[fl.out.flag])return AZIONI[fl.out.flag];
+ if(t==="REFER")return "Pratica da sottoporre a "+(fl.out.who||"un analista")+" per valutazione manuale.";
+ if(t==="CONDITION")return "Puoi procedere, ma: "+fl.out.detail;
+ if(t==="KO")return "Requisito non soddisfatto su questo parametro.";
+ return fl.out.detail;
+}
 document.getElementById("runBtn").addEventListener("click",()=>{
   const f=readForm();const r=evaluate(f,RULES);const d=r.derived;
   const flags=r.fired.filter(x=>x.out.type!=="OK");
@@ -498,8 +526,9 @@ document.getElementById("runBtn").addEventListener("click",()=>{
    h+='<div style="margin:10px 0 4px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:.72rem;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Indice di fattibilità</span><span class="big" style="font-size:1.5rem;color:'+col+'">'+Math.round(idx)+"%</span></div>"+
     '<div class="meter" style="height:8px"><i style="width:'+Math.round(idx)+'%;background:'+col+'"></i></div>'+
     '<p class="note" style="margin-top:5px">'+(idx>0?"Vincolo più stretto: <b>"+binding+"</b>. ":"")+"Margine deterministico dalle soglie di policy, non una probabilità ML. Stima soggetta a verifica documentale.</p></div>"}
-  for(const fl of flags)h+='<div class="flag f-'+fl.out.type+'"><b>'+fl.out.flag+"</b> · "+fl.out.detail+' <span class="ref">['+fl.out.ref+"]</span></div>";
-  if(!flags.length)h+='<p class="note">Nessuna regola ostativa scattata.</p>';
+  if(flags.length){h+='<h3>Cosa fare</h3>';
+    for(const fl of flags)h+='<div class="flag f-'+fl.out.type+'"><b>'+azione(fl,f,d,r)+"</b><div class=\"why\">"+fl.out.detail+' <span class="ref">['+fl.out.ref+"]</span></div></div>";}
+  else h+='<p class="note">Nessuna regola ostativa: la pratica passa tutti i controlli automatici.</p>';
   h+='<h3>Numeri del motore</h3><div class="kv">';
   const rows=[["LTV",(d.ltv*100).toFixed(1)+"%",d.ltv/0.95],["DSR",(d.dsr*100).toFixed(1)+"%",d.dsr/0.5],
    ["Rata stimata",EUR.format(d.rata),null],["Reddito residuo",EUR.format(d.reddito_residuo),null],
