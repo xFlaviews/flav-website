@@ -1,0 +1,19 @@
+public/delibera.html
+  s_2c12716921ee24::t_31dfdf670651df 7,76-77,482-509,529-531
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "00bc5676890e79bf1ee1e724f2f9720fde53e560",
+  "prompts": {},
+  "sessions": {
+    "s_2c12716921ee24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af9bde4e-eba8-4512-abf2-be8d5d5c8bc4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "xFlaviews <155723308+xFlaviews@users.noreply.github.com>"
+    }
+  }
+}
