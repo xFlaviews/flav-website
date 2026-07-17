@@ -221,7 +221,7 @@ ul.clean li b{color:var(--strong)}
     <div class="arr">&rarr;</div>
     <div class="step"><div class="t1">L3 · regole-dato</div><div class="t2">Verdetto</div><div class="t3">worst-outcome-wins + citazione fonte</div></div>
   </div>
-  <div class="box"><span class="lbl">Confine da non violare</span><p>L'AI popola <b>solo</b> i fatti grezzi. I derivati (reddito netto pesato, DSR, LTV, MRI) e il verdetto sono <b>codice deterministico</b>. Se li calcolasse l'AI, perderesti riproducibilità e auditabilità proprio dove il regolatore guarda (GDPR art. 22).</p></div>
+  <div class="box"><span class="lbl">Confine da non violare</span><p>L'AI popola <b>solo</b> i fatti grezzi. I derivati (reddito netto pesato, DSR, LTV, MRI) e il verdetto sono <b>codice deterministico</b>. Se li calcolasse l'AI, perderesti riproducibilità e auditabilità dove il regolatore guarda (GDPR art. 22).</p></div>
 </div>
 
 <div class="sec">
@@ -271,7 +271,7 @@ ul.clean li b{color:var(--strong)}
 
 <div class="sec">
   <span class="secnum">06</span>
-  <h2 style="margin:4px 0 0">Le parti difficili, onestamente</h2>
+  <h2 style="margin:4px 0 0">Le parti difficili</h2>
   <hr class="rule">
   <div class="tw"><table>
     <thead><tr><th>#</th><th>Il punto duro</th><th>Il fix</th></tr></thead>
@@ -281,7 +281,7 @@ ul.clean li b{color:var(--strong)}
     <tr><td><b>C3</b></td><td>I fatti non sono piatti: garanti, nuclei, immobile, finalità.</td><td>Aggregato relazionale; l'aggregazione pesata è codice L2.</td></tr>
     </tbody>
   </table></div>
-  <p class="lead-p" style="margin-top:12px">Mostrarli rafforza il pitch: il design ha superato lo stress-test contro gli <b>esempi svolti del manuale</b> (48/48 golden test), verificati da audit avversariale indipendente (63/63 celle MRI, formule LTV/DSR/plug rate conformi al PDF).</p>
+  <p class="lead-p" style="margin-top:12px">Il design ha superato gli <b>esempi svolti del manuale</b> come test (48/48 golden). Un audit avversariale indipendente ha verificato le formule contro il PDF: 63/63 celle MRI, LTV, DSR e plug rate conformi.</p>
 </div>
 
 <div class="sec">
@@ -310,7 +310,7 @@ ul.clean li b{color:var(--strong)}
     <li><b>Niente linguaggio di regole custom.</b> DMN e JSON-Logic esistono già.</li>
     <li><b>Niente ri-estrazione sul cambio policy.</b> Replay sui fatti salvati.</li>
   </ul>
-  <div class="box" style="border-left-color:var(--accent);margin-top:20px"><span class="lbl">In una riga</span><p><b>AI dove aiuta, deterministico dove conta.</b> Estrazione e bozze di regole all'AI; verdetto, calcoli e ricalcolo al codice. Spiegabile per costruzione, scalabile per flusso.</p></div>
+  <div class="box" style="border-left-color:var(--accent);margin-top:20px"><span class="lbl">In una riga</span><p><b>AI dove aiuta, deterministico dove conta.</b> L'AI estrae i fatti e propone le bozze; il codice calcola, decide e ricalcola. Il costo segue il flusso, non lo stock.</p></div>
   <div style="margin-top:22px"><a class="cta" href="https://flaviusmiron.com/delibera">Apri la demo interattiva &rarr;</a></div>
 </div>
 
