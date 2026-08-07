@@ -1,0 +1,19 @@
+public/index.html
+  s_b89683e2f62607::t_e7c36ce4b17ab9 17-20,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "9d68eb735f428a9ff32b1df0d08b9bf1b39728f7",
+  "prompts": {},
+  "sessions": {
+    "s_b89683e2f62607": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8a933f55-fa6b-4a9a-b448-5172ab7dee53",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "xFlaviews <flaviusmironcatalin@gmail.com>"
+    }
+  }
+}
