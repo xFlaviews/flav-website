@@ -1,0 +1,25 @@
+public/robots.txt
+  s_b89683e2f62607::t_31891b5df1f131 1-4
+public/index.html
+  s_b89683e2f62607::t_b2acc57966f398 9
+public/cv.html
+  s_b89683e2f62607::t_7cc03166895db6 7-8
+public/sitemap.xml
+  s_b89683e2f62607::t_6fa4fa863a1fbd 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "a235fc4ffbd77426465169b2a91a3bd277db658c",
+  "prompts": {},
+  "sessions": {
+    "s_b89683e2f62607": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8a933f55-fa6b-4a9a-b448-5172ab7dee53",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "xFlaviews <flaviusmironcatalin@gmail.com>"
+    }
+  }
+}
