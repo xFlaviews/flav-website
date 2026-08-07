@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://flaviusmiron.com/sitemap.xml
