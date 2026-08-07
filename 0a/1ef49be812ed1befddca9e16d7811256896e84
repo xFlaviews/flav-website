@@ -1,0 +1,21 @@
+public/_redirects
+  s_b89683e2f62607::t_6511e573743af9 1
+public/index.html
+  s_b89683e2f62607::t_e85f65e731ebb1 47-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "0a1ef49be812ed1befddca9e16d7811256896e84",
+  "prompts": {},
+  "sessions": {
+    "s_b89683e2f62607": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8a933f55-fa6b-4a9a-b448-5172ab7dee53",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "xFlaviews <flaviusmironcatalin@gmail.com>"
+    }
+  }
+}
